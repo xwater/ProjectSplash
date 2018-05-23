@@ -12,6 +12,7 @@ module.exports = {
     oauth: '' // just the oauth token
   },
   // Array of channels for your bot to join
+  // Example channel #xwater
   channels: [
     ''
   ]
