@@ -2,12 +2,8 @@
 const config = require('./config')
 const Player = require('./main/Player')
 
-// generate character pools
-const charPool = require('./main/characters')
 const WebSocketServer = require('websocket').server
 const http = require('http')
-const fs = require('fs')
-const jsonfile = require('jsonfile')
 const tmi = require('tmi.js')
 const sqlite3 = require('sqlite3').verbose()
 
@@ -15,30 +11,17 @@ let GameID = -1
 let KillID = -1
 let Season = 1
 
+// generate character pools
+let charPool = require('./main/characters').charPool
 // DB connection
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
 let statsDB = new sqlite3.Database('./lib/stats.db')
 // global variable declarations
 let players = []
-let aliases = []
-aliases['mario'] = ['redluigi', 'charles martinet', 'charlesmartinet', 'the great gonzales', 'thegreatgonzales', 'marty-o', 'greatgonzales']
-aliases['luigi'] = ['greenmario', 'mr. l', 'dweeb', 'weegee', 'weegi', 'this character is lame', 'moistTrash']
-aliases['pika'] = ['pikachu', 'pika-pika', 'yellow mouse', 'electricrat', 'electric rat']
-aliases['puff'] = ['jigglypuff', 'purin', 'hungrybox', 'h-box', 'hbox', 'jiggly']
-aliases['dk'] = ['donkey kong', 'donny keng', 'barb', 'harry dong', 'harambe']
-aliases['falcon'] = ['captain falcon', 'captainfalcon', 'moistFalcon']
-aliases['ness'] = ['backthrow boy', 'backthrow-boy']
-aliases['link'] = ['hero of time', 'herooftime', 'lonk', 'ocarina of time is a great game', 'moistSheck']
-aliases['samus'] = ['metroid', 'mattroid', 'shamus', 'girlrobot', 'seamus']
-aliases['yoshi'] = ['greendog', 'moistCry']
-aliases['fox'] = ['starfox', 'spacedog', 'lucidfoxx', 'foxmccloud', 'foxonly', 'foxonlyfinaldestination']
-aliases['kirby'] = ['lilkirbs', 'vacuum', 'succ', 'sgtsucc', 'moistSucc']
-aliases['ike'] = ['fightformyfriends', 'strongmarth', 'bigmarth']
-aliases['sonic'] = ['sanic', 'gottagofast', '&knuckles', 'moistFast']
-aliases['dedede'] = ['deedeedee', 'deedede', 'kingdedede', 'king dedede']
-aliases['gaw'] = ['gameandwatch', 'game&watch', 'mrgameandwatch', 'mrgame&watch', 'game and watch', 'game & watch', 'g&w', 'gaymanwatch']
-aliases['squirtle'] = ['turtle', 'squirt turtle', 'moistSquirt', 'moistGold']
-aliases['mii'] = ['xwater', 'miikii', 'miiki', 'miki', 'slickmik', 'quickmik', 'trickymiki', 'gunkill', 'clutchwater', 'stickymiki']
+
+// import aliases for characters
+let aliases = require('./main/aliases')
+
 let entries = []
 let pools = []
 let gameState = false
@@ -200,7 +183,7 @@ function chooseTarget (safe) {
 function killPlayer (safe) {
   console.log(players[0].fullName + ' ' + players[1].fullName + ' ' + players[2].fullName + ' ' + players[3].fullName)
   if (!gameState) { return }
-  let winChar, unlock
+  let winChar
   // choose target, avoid self and dead targets
   let target = chooseTarget(safe)
   console.log('chosen target is ' + target)
@@ -224,7 +207,7 @@ function killPlayer (safe) {
   if (done === true) {
     let winners = pickWinners()
     if (winners.length === 1) {
-      unlock = Unlockables(winners[0])
+      // unlock = Unlockables(winners[0]) //TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
       payout(winners[0], 0, '', GameID)
       endGame()
       winChar = winners[0]['character']
@@ -248,13 +231,13 @@ function killPlayer (safe) {
   msg[4] = safe
   msg[5] = target
   if (winChar) { msg[6] = winChar }
-  if (unlock) { msg[7] = unlock }
+  // if (unlock) { msg[7] = unlock }
   console.log(JSON.stringify(msg))
   websockets['animation'].sendUTF(JSON.stringify(msg))
 }
 
 function SDwinner (winner) {
-  let unlock = Unlockables(players[winner])
+  // let unlock = Unlockables(players[winner]) //TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
   payout(players[winner], (players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', GameID)
   console.log('ALERT!!@#!#!@#@!' + JSON.stringify(players[winner].character))
   let msg = JSON.parse(JSON.stringify(players))
@@ -264,7 +247,7 @@ function SDwinner (winner) {
   // grab both winners again, put loser position into msg[5]
   if (winners[0].pos === winner) { msg[5] = winners[1].pos } else { msg[5] = winners[0].pos }
   msg[6] = players[winner].character
-  if (unlock) { msg[7] = unlock }
+  // if (unlock) { msg[7] = unlock }
   websockets['animation'].sendUTF(JSON.stringify(msg))
   endGame()
 }
@@ -315,38 +298,38 @@ function isOver () {
   return false
 }
 
-function Unlockables (winner) {
-  if (charPool.indexOf('sonic') === -1) {
-    if (players[0].kills > 4) {
-      return unlockChar('sonic')
-    }
-  }
-  if (charPool.indexOf('gaw') === -1) {
-    if (winner.lives === 2 && winner.kills === 0) {
-      return unlockChar('gaw')
-    }
-  }
-  if (charPool.indexOf('squirtle') === -1) {
-    if ((winner.character === 'pika' || winner.character === 'puff') && entries.length > 99) {
-      return unlockChar('squirtle')
-    }
-  }
-  if (charPool.indexOf('mii') === -1) {
-    if (winner.team.indexOf('xwater') > -1) {
-      return unlockChar('mii')
-    }
-  }
-}
+// function Unlockables (winner) {
+//   if (charPool.indexOf('sonic') === -1) {
+//     if (players[0].kills > 4) {
+//       return unlockChar('sonic')
+//     }
+//   }
+//   if (charPool.indexOf('gaw') === -1) {
+//     if (winner.lives === 2 && winner.kills === 0) {
+//       return unlockChar('gaw')
+//     }
+//   }
+//   if (charPool.indexOf('squirtle') === -1) {
+//     if ((winner.character === 'pika' || winner.character === 'puff') && entries.length > 99) {
+//       return unlockChar('squirtle')
+//     }
+//   }
+//   if (charPool.indexOf('mii') === -1) {
+//     if (winner.team.indexOf('xwater') > -1) {
+//       return unlockChar('mii')
+//     }
+//   }
+// }
 
-function unlockChar (unlock) {
-  charPool.push(unlock)
-  jsonfile.writeFileSync('./characters.txt', charPool)
-  console.log(unlock + ' Has joined the battle!')
-  client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
-  var unlockAni = {'challenger': unlock}
-  websockets['animation'].sendUTF(JSON.stringify(unlockAni))
-  return unlock
-}
+// function unlockChar (unlock) {
+//   charPool.push(unlock)
+//   jsonfile.writeFileSync('./characters.txt', charPool)
+//   console.log(unlock + ' Has joined the battle!')
+//   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
+//   var unlockAni = {'challenger': unlock}
+//   websockets['animation'].sendUTF(JSON.stringify(unlockAni))
+//   return unlock
+// }
 
 function payout (winner, bonus, message, GID) {
   // calculate pay
