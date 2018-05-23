@@ -1,5 +1,6 @@
 // includes
 const config = require('./config')
+const Player = require('./main/Player')
 var WebSocketServer = require('websocket').server
 var http = require('http')
 var fs = require('fs')
@@ -51,20 +52,6 @@ var client = new tmi.client(config)
 
 client.connect()
 
-// Game Logic and Code here
-class Player {
-  constructor (cid, character, pos) {
-    this.cid = cid
-    this.character = character
-    this.lives = 2
-    this.kills = 0
-    this.alive = true
-    this.team = []
-    this.fullName = fs.readFileSync('./assets/names' + character + '.txt', 'utf8')
-    this.pos = pos
-  }
-}
-
 // connections that need to be stored
 var websockets = {}
 var server = http.createServer(function (request, response) {
@@ -109,7 +96,7 @@ wsServer.on('request', function (request) {
         // close entry to the game
         websockets['admin'].sendUTF(JSON.stringify('gamestart'))
         canEnter = false
-        client.action('#xwater', 'Game has begun! Only !random will join, !team to check.')
+        client.action(config.channels[0], 'Game has begun! Only !random will join, !team to check.')
       } else {
         // choose a player to kill
         if (SD === -1) {
@@ -241,8 +228,8 @@ function killPlayer (safe) {
     } else if (winners.length === 2) {
       // sudden death here
       SD = getRandomInt(0, 3)
-      client.action('#xwater', 'Sudden Death mode:' + suddenDeath[SD])
-      client.action('#xwater', suddenDeathDescriptions[SD])
+      client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[SD])
+      client.action(config.channels[0], suddenDeathDescriptions[SD])
       winners.push('SD')
       websockets['admin'].sendUTF(JSON.stringify(winners))
     } else {
@@ -352,7 +339,7 @@ function unlockChar (unlock) {
   charpool.push(unlock)
   jsonfile.writeFileSync('./characters.txt', charpool)
   console.log(unlock + ' Has joined the battle!')
-  client.action('#xwater', 'New Challenger Approaching! ' + fs.readFileSync('.\\assets\\names\\' + unlock + '.txt', 'utf8') + ' has joined the battle!')
+  client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
   var unlockAni = {'challenger': unlock}
   websockets['animation'].sendUTF(JSON.stringify(unlockAni))
   return unlock
@@ -383,9 +370,9 @@ function payout (winner, bonus, message, GID) {
       pay, GID])
 
   console.log(winner.team)
-  client.action('#xwater', 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
+  client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
   setTimeout(function () {
-    client.action('#xwater', winner.team[getRandomInt(0, winner.team.length - 1)])
+    client.action(config.channels[0], winner.team[getRandomInt(0, winner.team.length - 1)])
   }, 2000)
 }
 
@@ -435,13 +422,13 @@ function storeUser (username) {
 
 client.on('chat', function (channel, user, message, self) {
   if (message.toLowerCase() === '!replace 03b9-0000-0297-aa32') {
-    client.timeout('#xwater', user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')
+    client.timeout(config.channels[0], user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')
   }
 
   if (!gameState) { return }
   if (SD >= 0) {
     if (message.toLowerCase() === '!' + suddenDeath[SD].toLowerCase().replace(' ', '')) {
-      client.action('#xwater', suddenDeathDescriptions[SD])
+      client.action('config.channels[0]', suddenDeathDescriptions[SD])
       console.log('got the message for SD')
     }
   }
@@ -450,7 +437,7 @@ client.on('chat', function (channel, user, message, self) {
   if (message.toLowerCase() === '!team') {
     msg = findTeam(user['username'])
     if (msg) {
-      client.action('#xwater', msg)
+      client.action(config.channels[0], msg)
     }
   }
   for (var i = 0; i < 4; i++) {
@@ -459,21 +446,21 @@ client.on('chat', function (channel, user, message, self) {
         entries.push(user['username'])
         var randTeam = getRandomInt(0, 3)
         players[randTeam].team.push(user['username'])
-        client.action('#xwater', user['username'] + ' joined team ' + players[randTeam].fullName + '!')
+        client.action(config.channels[0], user['username'] + ' joined team ' + players[randTeam].fullName + '!')
         storeUser(user['username'])
         statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [GameID, user['username'], players[randTeam].character, 1, randTeam])
         websockets['char'].sendUTF(JSON.stringify(players))
         return
       } else {
         msg = findTeam(user['username'])
-        client.action('#xwater', 'Already on a team! ' + msg)
+        client.action(config.channels[0], 'Already on a team! ' + msg)
         return
       }
     }
     if (!canEnter) {
       if (message.toLowerCase() === '!' + players[i].character || aliases[players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
         if (entries.indexOf(user['username']) === -1) {
-          client.action('#xwater', 'Entries are closed! !random to join a team')
+          client.action(config.channels[0], 'Entries are closed! !random to join a team')
           return
         }
       }
@@ -482,14 +469,14 @@ client.on('chat', function (channel, user, message, self) {
       if (entries.indexOf(user['username']) === -1) {
         entries.push(user['username'])
         players[i].team.push(user['username'])
-        client.action('#xwater', user['username'] + ' joined team ' + players[i].fullName + '!')
+        client.action(config.channels[0], user['username'] + ' joined team ' + players[i].fullName + '!')
         statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [GameID, user['username'], players[i].character, 0, i])
         storeUser(user['username'])
         websockets['char'].sendUTF(JSON.stringify(players))
         return
       } else {
         msg = findTeam(user['username'])
-        client.action('#xwater', 'Already on a team! ' + msg)
+        client.action(config.channels[0], 'Already on a team! ' + msg)
         return
       }
     }
