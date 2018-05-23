@@ -1,4 +1,5 @@
 // includes
+const config = require('./config')
 var WebSocketServer = require('websocket').server
 var http = require('http')
 var fs = require('fs')
@@ -12,7 +13,7 @@ var Season = 1
 var charpool = Object.values(jsonfile.readFileSync('./characters.txt'))
 // DB connection
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
-var statsDB = new sqlite3.Database('C:\\Users\\xwater\\Dev\\SPLASH\\lib\\stats.db')
+var statsDB = new sqlite3.Database('./lib/stats.db')
 // global variable declarations
 var players = []
 var aliases = []
@@ -45,32 +46,10 @@ var suddenDeathDescriptions = ['Broke Man is a 100 man easy Coinless run.  If he
   'Pacifist is a run where you kill NO enemies.  If xwater murders something, the team with a remaining stock wins',
   'Champion is a 100 man easy all WR run.  If any level is completed without WR, the team with a stock reamining wins. (Autos Excluded)']
 
-// twitch options
-var options = {
-  options: {
-    debug: true
-  },
-  connection: {
-    reconnect: true
-  },
-  identity: {
-    username: 'xwetbot',
-    password: 'pla'
-  },
-  channels: ['#xwater']
-}
-
 // eslint-disable-next-line new-cap
-var client = new tmi.client(options)
+var client = new tmi.client(config)
 
-fs.readFile('strings.txt', 'utf-8', function (err, data) {
-  if (err) {
-    // TODO Probably shouldn't just crash if there is an error
-    throw (err)
-  }
-  options.identity.password = data
-  client.connect()
-})
+client.connect()
 
 // Game Logic and Code here
 class Player {
@@ -81,7 +60,7 @@ class Player {
     this.kills = 0
     this.alive = true
     this.team = []
-    this.fullName = fs.readFileSync('.\\assets\\names\\' + character + '.txt', 'utf8')
+    this.fullName = fs.readFileSync('./assets/names' + character + '.txt', 'utf8')
     this.pos = pos
   }
 }
