@@ -123,5 +123,4 @@ fabric.properties
 # Notepad++ backups #
 *.bak
 
-.gitignore
 .idea/
