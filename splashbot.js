@@ -370,10 +370,14 @@ function payout (winner, bonus, message, GID) {
       pay, GID])
 
   console.log(winner.team)
-  client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
-  setTimeout(function () {
-    client.action(config.channels[0], winner.team[getRandomInt(0, winner.team.length - 1)])
-  }, 2000)
+  if (winner.team.length > 0) {
+    client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
+    setTimeout(function () {
+      client.action(config.channels[0], winner.team[getRandomInt(0, winner.team.length - 1)])
+    }, 2000)
+  } else {
+    client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! Unfortunately there were no players on this team. ')
+  }
 }
 
 function calcPay (winners) {
