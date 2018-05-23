@@ -1,23 +1,24 @@
 // includes
 const config = require('./config')
 const Player = require('./main/Player')
-var WebSocketServer = require('websocket').server
-var http = require('http')
-var fs = require('fs')
-var jsonfile = require('jsonfile')
-var tmi = require('tmi.js')
-var sqlite3 = require('sqlite3').verbose()
-var GameID = -1
-var KillID = -1
-var Season = 1
+const WebSocketServer = require('websocket').server
+const http = require('http')
+const fs = require('fs')
+const jsonfile = require('jsonfile')
+const tmi = require('tmi.js')
+const sqlite3 = require('sqlite3').verbose()
+
+let GameID = -1
+let KillID = -1
+let Season = 1
 // generate character pools
-var charpool = Object.values(jsonfile.readFileSync('./characters.txt'))
+let charpool = Object.values(jsonfile.readFileSync('./characters.txt'))
 // DB connection
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
-var statsDB = new sqlite3.Database('./lib/stats.db')
+let statsDB = new sqlite3.Database('./lib/stats.db')
 // global variable declarations
-var players = []
-var aliases = []
+let players = []
+let aliases = []
 aliases['mario'] = ['redluigi', 'charles martinet', 'charlesmartinet', 'the great gonzales', 'thegreatgonzales', 'marty-o', 'greatgonzales']
 aliases['luigi'] = ['greenmario', 'mr. l', 'dweeb', 'weegee', 'weegi', 'this character is lame', 'moistTrash']
 aliases['pika'] = ['pikachu', 'pika-pika', 'yellow mouse', 'electricrat', 'electric rat']
@@ -36,38 +37,38 @@ aliases['dedede'] = ['deedeedee', 'deedede', 'kingdedede', 'king dedede']
 aliases['gaw'] = ['gameandwatch', 'game&watch', 'mrgameandwatch', 'mrgame&watch', 'game and watch', 'game & watch', 'g&w', 'gaymanwatch']
 aliases['squirtle'] = ['turtle', 'squirt turtle', 'moistSquirt', 'moistGold']
 aliases['mii'] = ['xwater', 'miikii', 'miiki', 'miki', 'slickmik', 'quickmik', 'trickymiki', 'gunkill', 'clutchwater', 'stickymiki']
-var entries = []
-var pools = []
-var gameState = false
-var canEnter = false
-var SD = -1
-var suddenDeath = ['Broke Man', 'Unstoppable', 'Pacifist', 'Champion']
-var suddenDeathDescriptions = ['Broke Man is a 100 man easy Coinless run.  If he touches a single coin, the team with a remaining life wins (Red Coins Excluded)',
+let entries = []
+let pools = []
+let gameState = false
+let canEnter = false
+let SD = -1
+let suddenDeath = ['Broke Man', 'Unstoppable', 'Pacifist', 'Champion']
+let suddenDeathDescriptions = ['Broke Man is a 100 man easy Coinless run.  If he touches a single coin, the team with a remaining life wins (Red Coins Excluded)',
   'Unstoppable is a 100 man easy Deathless run.  If xwater dies, the team with a remaining stock wins.',
   'Pacifist is a run where you kill NO enemies.  If xwater murders something, the team with a remaining stock wins',
   'Champion is a 100 man easy all WR run.  If any level is completed without WR, the team with a stock reamining wins. (Autos Excluded)']
 
 // eslint-disable-next-line new-cap
-var client = new tmi.client(config)
+let client = new tmi.client(config)
 
 client.connect()
 
 // connections that need to be stored
-var websockets = {}
-var server = http.createServer(function (request, response) {
+let websockets = {}
+let server = http.createServer(function (request, response) {
   // process HTTP request. Since we're writing just WebSockets server
   // we don't have to implement anything.
 })
 server.listen(3000, function () { })
 
 // create the server
-var wsServer = new WebSocketServer({
+let wsServer = new WebSocketServer({
   httpServer: server
 })
 
 // WebSocket server
 wsServer.on('request', function (request) {
-  var connection = request.accept(null, request.origin)
+  let connection = request.accept(null, request.origin)
 
   // This is the most important callback for us, we'll handle
   // all messages from users here.
@@ -140,7 +141,7 @@ wsServer.on('request', function (request) {
 function chooseChars () {
   pools = []
   while (pools.length < 4) {
-    var randomnumber = getRandomInt(0, (Object.keys(charpool).length) - 1)
+    let randomnumber = getRandomInt(0, (Object.keys(charpool).length) - 1)
     if (pools.indexOf(randomnumber) > -1) continue
     pools[pools.length] = randomnumber
   }
@@ -155,7 +156,7 @@ function startGame () {
   chooseChars()
   // reset entries and players
   entries = []
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     players[i] = new Player(pools[i], charpool[pools[i]], i)
   }
   console.log(players[0].fullName + ' ' + players[1].fullName + ' ' + players[2].fullName + ' ' + players[3].fullName)
@@ -172,7 +173,7 @@ function startGame () {
   KillID = 0
   websockets['animation'].sendUTF(JSON.stringify(players))
   // send a "game start" message in [4] of char select screen
-  var msg = JSON.parse(JSON.stringify(players))
+  let msg = JSON.parse(JSON.stringify(players))
   msg[4] = 'start'
   websockets['char'].sendUTF(JSON.stringify(msg))
   gameState = true
@@ -181,7 +182,7 @@ function startGame () {
 
 function chooseTarget (safe) {
   // array where key is random number, value is player ID of who to kill
-  var targets = []
+  let targets = []
   for (var i = 0; i < 4; ++i) {
     if (i !== safe) {
       for (var j = 0; j < players[i].lives; j++) {
@@ -189,7 +190,7 @@ function chooseTarget (safe) {
       }
     }
   }
-  var target = getRandomInt(0, targets.length - 1)
+  let target = getRandomInt(0, targets.length - 1)
   console.log(target + ' ' + targets + 'targets.length = ' + targets.length + 'targets[target] = ' + targets[target])
   return targets[target]
 }
@@ -197,9 +198,9 @@ function chooseTarget (safe) {
 function killPlayer (safe) {
   console.log(players[0].fullName + ' ' + players[1].fullName + ' ' + players[2].fullName + ' ' + players[3].fullName)
   if (!gameState) { return }
-  var winChar, unlock
+  let winChar, unlock
   // choose target, avoid self and dead targets
-  var target = chooseTarget(safe)
+  let target = chooseTarget(safe)
   console.log('chosen target is ' + target)
   players[target].lives--
   // make sure to mark player as dead if they are dead
@@ -215,11 +216,11 @@ function killPlayer (safe) {
     console.log(err)
   })
   // check to see if the game is over
-  var done = isOver()
+  let done = isOver()
   // if there is a winner!
 
   if (done === true) {
-    var winners = pickWinners()
+    let winners = pickWinners()
     if (winners.length === 1) {
       unlock = Unlockables(winners[0])
       payout(winners[0], 0, '', GameID)
@@ -234,14 +235,14 @@ function killPlayer (safe) {
       websockets['admin'].sendUTF(JSON.stringify(winners))
     } else {
       // payout all
-      for (var i = 0; i < 4; i++) {
+      for (let i = 0; i < 4; i++) {
         payout(players[i], 0, '', GameID)
       }
       endGame()
     }
   }
   // build message for animation
-  var msg = JSON.parse(JSON.stringify(players))
+  let msg = JSON.parse(JSON.stringify(players))
   msg[4] = safe
   msg[5] = target
   if (winChar) { msg[6] = winChar }
@@ -251,11 +252,11 @@ function killPlayer (safe) {
 }
 
 function SDwinner (winner) {
-  var unlock = Unlockables(players[winner])
+  let unlock = Unlockables(players[winner])
   payout(players[winner], (players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', GameID)
   console.log('ALERT!!@#!#!@#@!' + JSON.stringify(players[winner].character))
-  var msg = JSON.parse(JSON.stringify(players))
-  var winners = pickWinners()
+  let msg = JSON.parse(JSON.stringify(players))
+  let winners = pickWinners()
 
   msg[4] = winner
   // grab both winners again, put loser position into msg[5]
@@ -272,24 +273,24 @@ function endGame () {
   GameID = -1
   KillID = -1
   websockets['admin'].sendUTF(JSON.stringify('gamedone'))
-  var charmsg = JSON.parse(JSON.stringify(players))
+  let charmsg = JSON.parse(JSON.stringify(players))
   charmsg[4] = 'end'
   websockets['char'].sendUTF(JSON.stringify(charmsg))
 }
 
 function pickWinners () {
-  var scores = []
-  var topScore = 0
+  let scores = []
+  let topScore = 0
   // calculate top score and each player's score
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     scores[i] = players[i].kills + (players[i].lives * 2)
     if (scores[i] > topScore) {
       topScore = scores[i]
     }
   }
   // put all players with topscore into winner array, return.
-  var winners = []
-  for (var j = 0; j < 4; j++) {
+  let winners = []
+  for (let j = 0; j < 4; j++) {
     if (scores[j] === topScore) {
       winners.push(players[j])
     }
@@ -299,8 +300,8 @@ function pickWinners () {
 }
 
 function isOver () {
-  var alivect = 0
-  for (var i = 0; i < 4; i++) {
+  let alivect = 0
+  for (let i = 0; i < 4; i++) {
     if (players[i].alive === true) {
       alivect++
     }
@@ -346,13 +347,13 @@ function unlockChar (unlock) {
 }
 
 function payout (winner, bonus, message, GID) {
-  // calcualte pay
-  var pay = calcPay(winner)
+  // calculate pay
+  let pay = calcPay(winner)
   // if pay, for some reason is NaN, set it to 0
   if (isNaN(pay)) { pay = 0 }
   // pay out all of winning team
   pay = parseInt(pay + bonus, 10)
-  for (var i = 0; i < winner.team.length; i++) {
+  for (let i = 0; i < winner.team.length; i++) {
     try {
       // OLD PAYOUT - NEEDS TO BE UPDATED!!!!
       // db.run("UPDATE CurrencyUser SET Points = ((SELECT Points from CurrencyUser where Name='"+winner.team[i]+"')+"+pay+") WHERE Name ='"+winner.team[i]+"'");
@@ -381,11 +382,11 @@ function payout (winner, bonus, message, GID) {
 }
 
 function calcPay (winners) {
-  var baseRate = entries.length * 10
+  let baseRate = entries.length * 10
   // bonus greater for smaller teams.  = (1-%ofplayers)+1
-  var bonus = (1 - (winners.team.length / entries.length) + 1)
+  let bonus = (1 - (winners.team.length / entries.length) + 1)
   // multiply the baserate by the bonus
-  var pay = bonus * baseRate
+  let pay = bonus * baseRate
   console.log('calculated payrate: ' + pay)
 
   return pay
@@ -436,7 +437,7 @@ client.on('chat', function (channel, user, message, self) {
       console.log('got the message for SD')
     }
   }
-  var msg
+  let msg
 
   if (message.toLowerCase() === '!team') {
     msg = findTeam(user['username'])
@@ -444,11 +445,11 @@ client.on('chat', function (channel, user, message, self) {
       client.action(config.channels[0], msg)
     }
   }
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     if (message.toLowerCase() === '!random') {
       if (entries.indexOf(user['username']) === -1) {
         entries.push(user['username'])
-        var randTeam = getRandomInt(0, 3)
+        let randTeam = getRandomInt(0, 3)
         players[randTeam].team.push(user['username'])
         client.action(config.channels[0], user['username'] + ' joined team ' + players[randTeam].fullName + '!')
         storeUser(user['username'])
