@@ -1,1 +1,0 @@
-["mario","dk","link","samus","yoshi","pika","fox","kirby","luigi","puff","falcon","ness","ike","dedede","sonic","mii","squirtle","gaw"]

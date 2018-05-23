@@ -1,6 +1,9 @@
 // includes
 const config = require('./config')
 const Player = require('./main/Player')
+
+// generate character pools
+const charPool = require('./main/characters')
 const WebSocketServer = require('websocket').server
 const http = require('http')
 const fs = require('fs')
@@ -11,8 +14,7 @@ const sqlite3 = require('sqlite3').verbose()
 let GameID = -1
 let KillID = -1
 let Season = 1
-// generate character pools
-let charpool = Object.values(jsonfile.readFileSync('./characters.txt'))
+
 // DB connection
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
 let statsDB = new sqlite3.Database('./lib/stats.db')
@@ -141,7 +143,7 @@ wsServer.on('request', function (request) {
 function chooseChars () {
   pools = []
   while (pools.length < 4) {
-    let randomnumber = getRandomInt(0, (Object.keys(charpool).length) - 1)
+    let randomnumber = getRandomInt(0, (Object.keys(charPool).length) - 1)
     if (pools.indexOf(randomnumber) > -1) continue
     pools[pools.length] = randomnumber
   }
@@ -157,7 +159,7 @@ function startGame () {
   // reset entries and players
   entries = []
   for (let i = 0; i < 4; i++) {
-    players[i] = new Player(pools[i], charpool[pools[i]], i)
+    players[i] = new Player(pools[i], charPool[pools[i]], i)
   }
   console.log(players[0].fullName + ' ' + players[1].fullName + ' ' + players[2].fullName + ' ' + players[3].fullName)
   // make entry in games table of statsDB
@@ -314,22 +316,22 @@ function isOver () {
 }
 
 function Unlockables (winner) {
-  if (charpool.indexOf('sonic') === -1) {
+  if (charPool.indexOf('sonic') === -1) {
     if (players[0].kills > 4) {
       return unlockChar('sonic')
     }
   }
-  if (charpool.indexOf('gaw') === -1) {
+  if (charPool.indexOf('gaw') === -1) {
     if (winner.lives === 2 && winner.kills === 0) {
       return unlockChar('gaw')
     }
   }
-  if (charpool.indexOf('squirtle') === -1) {
+  if (charPool.indexOf('squirtle') === -1) {
     if ((winner.character === 'pika' || winner.character === 'puff') && entries.length > 99) {
       return unlockChar('squirtle')
     }
   }
-  if (charpool.indexOf('mii') === -1) {
+  if (charPool.indexOf('mii') === -1) {
     if (winner.team.indexOf('xwater') > -1) {
       return unlockChar('mii')
     }
@@ -337,8 +339,8 @@ function Unlockables (winner) {
 }
 
 function unlockChar (unlock) {
-  charpool.push(unlock)
-  jsonfile.writeFileSync('./characters.txt', charpool)
+  charPool.push(unlock)
+  jsonfile.writeFileSync('./characters.txt', charPool)
   console.log(unlock + ' Has joined the battle!')
   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
   var unlockAni = {'challenger': unlock}
