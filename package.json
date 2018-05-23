@@ -23,7 +23,7 @@
   "scripts": {
     "start": "node splashbot.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint --ext .js, .html ./index.html"
+    "lint": "eslint --ext .js, .html ./splashbot.js ./main --fix"
   },
   "author": "",
   "license": "ISC"
