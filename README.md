@@ -32,6 +32,11 @@ Start by setting up the ```config.js``` file. You will need to set up the follow
 
 Once you have set up the config.js file we can now start the bot.
 
+Required For first use
+```bash
+npm install
+```
+----------------------------
 ```bash
 npm run start
 ```
