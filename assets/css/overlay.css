@@ -1,0 +1,208 @@
+@font-face {
+    font-family: "DFGothic-SU";
+    src: url('../font/DFGothic-SU-WING-RKSJ-H.ttf') format("truetype");
+}
+
+#game-container {
+    position: fixed;
+    bottom: 0;
+    margin-left: 460px;
+    margin-bottom: 40px;
+}
+
+.charinfo {
+    margin-left: -20px;
+}
+
+.charicon {
+    height: 110px;
+}
+
+.charbox {
+    float: left;
+    margin: 0px 102px;
+}
+
+.lives {
+    font-family: DFGothic-SU;
+}
+
+.kills {
+    margin-top: 55px;
+}
+
+.kills_count {
+    margin-top: 6px;
+    font-family: DFGothic-SU;
+    margin-left: -41px;
+    font-size: 30px;
+    -webkit-text-stroke: 1px white;
+}
+
+.left {
+    float: left;
+}
+
+.animation {
+    height: 400px;
+    z-index: 0;
+}
+
+.new-challenger {
+    width: 1920px;
+    height: 1080px;
+    margin-top: -205px;
+    margin-left: 0px;
+    z-index: 100;
+}
+
+#challenger {
+    z-index: 99;
+}
+
+#Wanimation {
+    z-index: 0;
+    float: left;
+}
+
+#Lanimation {
+    z-index: 0;
+    float: right;
+}
+
+#animation_container {
+    margin-top: 300px;
+}
+
+@-webkit-keyframes shakeit {
+    0% {
+        -webkit-transform: rotate(-15deg);
+        transform: rotate(-15deg);
+    }
+
+    2% {
+        -webkit-transform: rotate(15deg);
+        transform: rotate(15deg);
+    }
+
+    4% {
+        -webkit-transform: rotate(-18deg);
+        transform: rotate(-18deg);
+    }
+
+    6% {
+        -webkit-transform: rotate(18deg);
+        transform: rotate(18deg);
+    }
+
+    8% {
+        -webkit-transform: rotate(-22deg);
+        transform: rotate(-22deg);
+    }
+
+    10% {
+        -webkit-transform: rotate(22deg);
+        transform: rotate(22deg);
+    }
+
+    12% {
+        -webkit-transform: rotate(-18deg);
+        transform: rotate(-18deg);
+    }
+
+    14% {
+        -webkit-transform: rotate(18deg);
+        transform: rotate(18deg);
+    }
+
+    16% {
+        -webkit-transform: rotate(-12deg);
+        transform: rotate(-12deg);
+    }
+
+    18% {
+        -webkit-transform: rotate(12deg);
+        transform: rotate(12deg);
+    }
+
+    20% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes shakeit {
+    0% {
+        -webkit-transform: rotate(-15deg);
+        -ms-transform: rotate(-15deg);
+        transform: rotate(-15deg);
+    }
+
+    2% {
+        -webkit-transform: rotate(15deg);
+        -ms-transform: rotate(15deg);
+        transform: rotate(15deg);
+    }
+
+    4% {
+        -webkit-transform: rotate(-18deg);
+        -ms-transform: rotate(-18deg);
+        transform: rotate(-18deg);
+    }
+
+    6% {
+        -webkit-transform: rotate(18deg);
+        -ms-transform: rotate(18deg);
+        transform: rotate(18deg);
+    }
+
+    8% {
+        -webkit-transform: rotate(-22deg);
+        -ms-transform: rotate(-22deg);
+        transform: rotate(-22deg);
+    }
+
+    10% {
+        -webkit-transform: rotate(22deg);
+        -ms-transform: rotate(22deg);
+        transform: rotate(22deg);
+    }
+
+    12% {
+        -webkit-transform: rotate(-18deg);
+        -ms-transform: rotate(-18deg);
+        transform: rotate(-18deg);
+    }
+
+    14% {
+        -webkit-transform: rotate(18deg);
+        -ms-transform: rotate(18deg);
+        transform: rotate(18deg);
+    }
+
+    16% {
+    . -webkit-transform: rotate(- 12 deg);
+        -ms-transform: rotate(-12deg);
+        transform: rotate(-12deg);
+    }
+
+    18% {
+        -webkit-transform: rotate(12deg);
+        -ms-transform: rotate(12deg);
+        transform: rotate(12deg);
+    }
+
+    20% {
+        -webkit-transform: rotate(0deg);
+        -ms-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+}
+
+.shakeit {
+    -webkit-animation: shakeit 2s ease infinite;
+    animation: shakeit 2s ease infinite;
+    transform-origin-x: 50%;
+    transform-origin-y: 0px;
+    transform-origin-z: initial;
+}

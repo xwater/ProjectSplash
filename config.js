@@ -7,13 +7,13 @@ module.exports = {
     reconnect: true
   },
   identity: {
-    username: '', // bot username
-    password: 'oauth:', // oauth token with the 'oauth:' prefix
-    oauth: '' // just the oauth token
+    username: 'chinnbot', // bot username
+    password: 'oauth:dfvhm92wcfctkt3ke55lta78ye8060', // oauth token with the 'oauth:' prefix
+    oauth: 'dfvhm92wcfctkt3ke55lta78ye8060' // just the oauth token
   },
   // Array of channels for your bot to join
   // Example channel #xwater
   channels: [
-    ''
+    '#blackmarmalade'
   ]
 }
