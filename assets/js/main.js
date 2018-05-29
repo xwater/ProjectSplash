@@ -9,6 +9,7 @@ $(function () {
     hideErrors()
     // connection is opened and ready to use
     showStatusMessage('connection ready!')
+    openRequriedWindows()
     connection.send('admin')
   }
 
@@ -111,4 +112,9 @@ function hideStatusMessage () {
   let counter = $('#counter')
   counter.hide()
   counter.text('')
+}
+
+function openRequriedWindows () {
+  window.open('./overlay.html')
+  window.open('./char.html')
 }
