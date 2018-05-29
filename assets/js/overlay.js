@@ -1,5 +1,10 @@
 $(function () {
   const connection = new WebSocket('ws://127.0.0.1:3000')
+
+  window.onbeforeunload = function () {
+    connection.send('animation-close')
+  }
+
   let audioToPlay = []
   const miiPrefix = ['s', 'g', 'f']
   connection.onopen = function () {

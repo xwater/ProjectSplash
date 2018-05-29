@@ -1,4 +1,5 @@
 module.exports = {
+  serverPort: 8080,
   options: {
     debug: false
   },
@@ -7,13 +8,13 @@ module.exports = {
     reconnect: true
   },
   identity: {
-    username: '', // bot username
-    password: 'oauth:', // oauth token with the 'oauth:' prefix
-    oauth: '' // just the oauth token
+    username: 'WeebBot', // bot username
+    password: 'oauth:asdasdasdasdasdasdasdasdasdasdas', // oauth token with the 'oauth:' prefix
+    oauth: 'asdasdasdasdasdasdasdasdasdasdas' // just the oauth token
   },
   // Array of channels for your bot to join
   // Example channel #xwater
   channels: [
-    ''
+    '#Weebbot'
   ]
 }
