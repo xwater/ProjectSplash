@@ -15,7 +15,7 @@ let Season = 1
 let charPool = require('./main/characters').charPool
 // DB connection
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
-let statsDB = new sqlite3.Database('./lib/stats.db')
+let statsDB = new sqlite3.Database('./stats.db')
 // global variable declarations
 let players = []
 
