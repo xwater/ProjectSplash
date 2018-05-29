@@ -9,7 +9,6 @@ $(function () {
     hideErrors()
     // connection is opened and ready to use
     showStatusMessage('connection ready!')
-    openRequriedWindows()
     connection.send('admin')
   }
 
@@ -30,9 +29,7 @@ $(function () {
         start.show()
         $('#generate').hide()
       }
-      if (json === 'The animation is not connected') {
-        showErrors('The overlay window or character selection screen is not open. If they are open please refresh this page and the other two windows and try again.')
-      }
+
       if (json === 'gamestart') {
         showPlayers('')
         start.hide()
@@ -46,8 +43,17 @@ $(function () {
         hidePlayers('')
         $('#p' + (json[0].pos + 1)).show()
         $('#p' + (json[1].pos + 1)).show()
-      } else {
-        console.log(message)
+      } else if (json === 'The animation is not connected') {
+        showErrors('The overlay window or character selection screen is not open. If they are open please refresh this page and the other two windows and try again.')
+      }
+
+      // socket connected messages
+
+      if (json === 'animation') {
+        addConnection('Overlay Connected')
+      }
+      if (json === 'char') {
+        addConnection('Character Selection Connected')
       }
     } catch (e) {
       console.log('This doesn\'t look like a valid JSON: ', message.data)
@@ -114,7 +120,8 @@ function hideStatusMessage () {
   counter.text('')
 }
 
-function openRequriedWindows () {
-  window.open('./overlay.html')
-  window.open('./char.html')
+function addConnection (text) {
+  let connections = $('#connections')
+  connections.show()
+  connections.append(text + '<br>')
 }
