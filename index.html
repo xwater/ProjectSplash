@@ -1,7 +1,14 @@
 <html>
 <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.js"
+            integrity="sha256-7NgI/5l45Md7VEbs4MGG4HsRoHu+lXKQ/vUK1LvXDps="
+            crossorigin="anonymous"></script>
+    <script src="assets/js/main.js"></script>
 </head>
 <body>
+<a href="./overlay.html" target="_blank">Overlay</a>
+<a href="./char.html" target="_blank">Character Selection</a>
 <p id="counter"></p>
 <p id="response"></p>
 <div id="animation"></div>
@@ -35,94 +42,7 @@
 <div>
     <button id="generate">Generate Game</button>
 </div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-<script src="./lib/notify.js"></script>
+
 </body>
 </html>
 
-<script>
-  $(function () {
-    var connection = new WebSocket('ws://127.0.0.1:3000')
-    hidePlayers('')
-    hidePlayers('sd')
-    $('#start').hide()
-    connection.onopen = function () {
-      // connection is opened and ready to use
-      $('#counter').text('connection ready!')
-      connection.send('admin')
-    }
-
-    connection.onerror = function (error) {
-      // an error occurred when sending/receiving data
-    }
-
-    connection.onmessage = function (message) {
-      // try to decode json (I assume that each message from server is json)
-      try {
-        var json = JSON.parse(message.data)
-        console.log(json)
-        if (json === 'ready') {
-          $('#start').show()
-          $('#generate').hide()
-        }
-        if (json === 'gamestart') {
-          showPlayers('')
-          $('#start').hide()
-        }
-        else if (json === 'gamedone') {
-          hidePlayers('')
-          $('#generate').show()
-        }
-        //meant for sudden death scenario
-        else if (typeof json[1] !== 'undefined' && typeof json[2] !== 'undefined') {
-          if (json[2] !== 'SD') {return}
-          console.log('doing the thing')
-          hidePlayers('')
-          $('#p' + (json[0].pos + 1)).show()
-          $('#p' + (json[1].pos + 1)).show()
-
-        }
-
-      } catch (e) {
-        console.log('This doesn\'t look like a valid JSON: ', message.data)
-        return
-      }
-    }
-
-    function hidePlayers (append) {
-      $('#p1' + append).hide()
-      $('#p2' + append).hide()
-      $('#p3' + append).hide()
-      $('#p4' + append).hide()
-    }
-
-    function showPlayers (append) {
-      $('#p1' + append).show()
-      $('#p2' + append).show()
-      $('#p3' + append).show()
-      $('#p4' + append).show()
-    }
-
-    $('#p1').click(function () {
-      connection.send('1')
-    })
-    $('#p2').click(function () {
-      connection.send('2')
-    })
-    $('#p3').click(function () {
-      connection.send('3')
-    })
-    $('#p4').click(function () {
-      connection.send('4')
-    })
-    $('#start').click(function () {
-      connection.send('start')
-    })
-    $('#generate').click(function () {
-      connection.send('generate')
-    })
-
-  })
-
-
-</script>
