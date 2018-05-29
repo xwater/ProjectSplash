@@ -106,6 +106,9 @@ wsServer.on('request', function (request) {
         webSockets.char = connection// store websocket for admin
         webSockets.char.send(JSON.stringify(gameState))
 
+        // Send update to admin so we can see it connected visually
+        webSockets.admin.send(JSON.stringify(gameState))
+
         console.log('Char select connected!')
       }
 

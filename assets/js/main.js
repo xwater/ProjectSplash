@@ -18,7 +18,6 @@ $(function () {
   connection.onopen = function () {
     hideErrors()
     // connection is opened and ready to use
-    showStatusMessage('connection ready!')
     connection.send('admin')
   }
 
@@ -88,6 +87,12 @@ $(function () {
     } else {
       admin.hide()
     }
+
+    // All our sockets are connected
+    if (data.overlay_connected === true && data.char_connected === true && data.admin_connected === true) {
+      showStatusMessage('connection ready!')
+    }
+
   }
 
   function hidePlayers (append) {
