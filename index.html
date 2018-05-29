@@ -1,113 +1,128 @@
 <html>
-	<head>
-	</head>
-	<body>
-		<p id="counter"></p>
-		<p id="response"></p>
-    <div id="animation"></div>
-		<div><button id="p1">Player 1 Win</button></div>
-		<div><button id="p2">Player 2 Win</button></div>
-		<div><button id="p3">Player 3 Win</button></div>
-		<div><button id="p4">Player 4 Win</button></div>
-    <div><button id="p1sd">Player 1 Win SD</button></div>
-    <div><button id="p2sd">Player 2 Win SD</button></div>
-    <div><button id="p3sd">Player 3 Win SD</button></div>
-    <div><button id="p4sd">Player 4 Win SD</button></div>
-    <div><button id="start">Start Game</button></div>
-    <div><button id="generate">Generate Game</button></div>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <script src=".\lib\notify.js"></script>
-	</body>
+<head>
+</head>
+<body>
+<p id="counter"></p>
+<p id="response"></p>
+<div id="animation"></div>
+<div>
+    <button id="p1">Player 1 Win</button>
+</div>
+<div>
+    <button id="p2">Player 2 Win</button>
+</div>
+<div>
+    <button id="p3">Player 3 Win</button>
+</div>
+<div>
+    <button id="p4">Player 4 Win</button>
+</div>
+<div>
+    <button id="p1sd">Player 1 Win SD</button>
+</div>
+<div>
+    <button id="p2sd">Player 2 Win SD</button>
+</div>
+<div>
+    <button id="p3sd">Player 3 Win SD</button>
+</div>
+<div>
+    <button id="p4sd">Player 4 Win SD</button>
+</div>
+<div>
+    <button id="start">Start Game</button>
+</div>
+<div>
+    <button id="generate">Generate Game</button>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="./lib/notify.js"></script>
+</body>
 </html>
 
 <script>
-$(function () {
-var connection = new WebSocket('ws://127.0.0.1:3000');
-hidePlayers("");
-hidePlayers("sd");
-$("#start").hide();
-connection.onopen = function () {
-        // connection is opened and ready to use
-         $("#counter").text("connection ready!");
-         connection.send("admin");
-    };
+  $(function () {
+    var connection = new WebSocket('ws://127.0.0.1:3000')
+    hidePlayers('')
+    hidePlayers('sd')
+    $('#start').hide()
+    connection.onopen = function () {
+      // connection is opened and ready to use
+      $('#counter').text('connection ready!')
+      connection.send('admin')
+    }
 
-connection.onerror = function (error) {
-        // an error occurred when sending/receiving data
-    };
+    connection.onerror = function (error) {
+      // an error occurred when sending/receiving data
+    }
 
-connection.onmessage = function (message) {
-        // try to decode json (I assume that each message from server is json)
-        try {
-            var json = JSON.parse(message.data);
-            console.log(json)
-            if(json=="ready"){
-              $("#start").show();
-              $("#generate").hide();
-            }
-            if(json=="gamestart"){
-              showPlayers("")
-              $("#start").hide();
-            }
-            else if(json=="gamedone"){
-              hidePlayers("");
-              $("#generate").show();
-            }
-            //meant for sudden death scenario
-            else if(typeof json[1] != 'undefined' && typeof json[2] != 'undefined' ){
-              if(json[2]!="SD"){return;}
-              console.log("doing the thing")
-              hidePlayers("");
-              $("#p"+(json[0].pos+1)).show();
-              $("#p"+(json[1].pos+1)).show();
-              
-            }
-
-        } catch (e) {
-            console.log('This doesn\'t look like a valid JSON: ', message.data);
-            return;
+    connection.onmessage = function (message) {
+      // try to decode json (I assume that each message from server is json)
+      try {
+        var json = JSON.parse(message.data)
+        console.log(json)
+        if (json === 'ready') {
+          $('#start').show()
+          $('#generate').hide()
         }
-    };
+        if (json === 'gamestart') {
+          showPlayers('')
+          $('#start').hide()
+        }
+        else if (json === 'gamedone') {
+          hidePlayers('')
+          $('#generate').show()
+        }
+        //meant for sudden death scenario
+        else if (typeof json[1] !== 'undefined' && typeof json[2] !== 'undefined') {
+          if (json[2] !== 'SD') {return}
+          console.log('doing the thing')
+          hidePlayers('')
+          $('#p' + (json[0].pos + 1)).show()
+          $('#p' + (json[1].pos + 1)).show()
 
-function hidePlayers(append){
-  $("#p1"+append).hide();
-  $("#p2"+append).hide();
-  $("#p3"+append).hide();
-  $("#p4"+append).hide();
-}
-function showPlayers(append){
-  $("#p1"+append).show();
-  $("#p2"+append).show();
-  $("#p3"+append).show();
-  $("#p4"+append).show();
-}
+        }
 
+      } catch (e) {
+        console.log('This doesn\'t look like a valid JSON: ', message.data)
+        return
+      }
+    }
 
+    function hidePlayers (append) {
+      $('#p1' + append).hide()
+      $('#p2' + append).hide()
+      $('#p3' + append).hide()
+      $('#p4' + append).hide()
+    }
 
+    function showPlayers (append) {
+      $('#p1' + append).show()
+      $('#p2' + append).show()
+      $('#p3' + append).show()
+      $('#p4' + append).show()
+    }
 
-$("#p1").click(function(){
-  connection.send("1");
-});
-$("#p2").click(function(){
-  connection.send("2");
-});
-$("#p3").click(function(){
-  connection.send("3");
-});
-$("#p4").click(function(){
-  connection.send("4");
-});
-$("#start").click(function(){
-  connection.send("start");
-});
-$("#generate").click(function(){
-  connection.send("generate");
-});
+    $('#p1').click(function () {
+      connection.send('1')
+    })
+    $('#p2').click(function () {
+      connection.send('2')
+    })
+    $('#p3').click(function () {
+      connection.send('3')
+    })
+    $('#p4').click(function () {
+      connection.send('4')
+    })
+    $('#start').click(function () {
+      connection.send('start')
+    })
+    $('#generate').click(function () {
+      connection.send('generate')
+    })
 
-
-
-
-});
+  })
 
 
 </script>

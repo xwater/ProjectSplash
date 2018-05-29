@@ -1,122 +1,34 @@
 <html>
 	<head>
-		<style type="text/css">
-			@font-face {
-		      font-family: "DFGothic-SU";
-		      src: url('.\\font\\DFGothic-SU-WING-RKSJ-H.ttf') format("truetype");
-		    }
-			body{
-				background-image:url(".\\assets\\charscreen.png");
-	        	background-repeat:no-repeat;
-			}
-			.charbox{
-				width:150px;
-			}
-			.charbox img{
-				width:180px;
-			}
-			.pbox{
-				width:340px;
-				height:430px;
-				padding-right: 11px;
-				position: relative;
-			}
-			#chargrid{
-				position: absolute;
-				left: 170px;
-				top: 80px;
-				margin: auto;
-				width: 50%;
-			}
-			#chargrid tbody tr td{
-				padding:0;
-			}
-			#pgrid{
-				position: absolute;
-				left: 14px;
-				top: 620px;
-				display: table-row;
-			}
-			.charname{
-				font-family:DFGothic-SU;
-				position: absolute;  
-				font-size: 4vw;
-				color:white;
-				text-shadow: 10px -4px 0px rgba(0, 0, 0, 1);
-				-webkit-text-stroke-width: 2px;
-   				-webkit-text-stroke-color: black;
-			    top: 0px;
-			    left: 20px;
-			    width: 100%;
-			    height: 10px;
-			    z-index: 1;
-			}
-			.charimage img{
-				position: absolute;
-				top:100px;
-				width:340px;
-				z-index: 0;
-			}
-			.smash-font{
-				font-family:DFGothic-SU;
-			}
-			.teamcount{
-				font-family:DFGothic-SU;
-				position: absolute;  
-				font-size: 3vw;
-				color:white;
-				text-shadow: 4px -2px 0px rgba(0, 0, 0, 1);
-				-webkit-text-stroke-width: 3px;
-   				-webkit-text-stroke-color: black;
-				bottom:0;
-				right:20;
-				z-index: 1;
-			}
-			.teamcount p{
-				margin:0;
-				display:inline-block;
-				z-index: 1;
-			}
-			.table > div {
-			    display: table-cell; 
-			    vertical-align: bottom; 
-			    border: 1px solid black; 
-			    padding: 10px; 
-			    height: 200px;   
-			}
-			.table > div > div.wrapper {
-			    position: relative; 
-			    width: 100%; 
-			    height: 100%;   
-			}​
-
-		</style>
-	</head>
+		<link rel="stylesheet" href="assets/css/character.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src=".\lib\notify.js"></script>
+    </head>
 	<body>
 		<table id="chargrid">
 		  <tr>
-		    <td class="charbox" id="p9"><img src=".\icons\select-icons\luigi.png"></th>
-		    <td class="charbox" id="p1"><img src=".\icons\select-icons\mario.png"></th> 
-		    <td class="charbox" id="p2"><img src=".\icons\select-icons\dk.png"></th>
-		    <td class="charbox" id="p3"><img src=".\icons\select-icons\link.png"></th>
-		    <td class="charbox" id="p4"><img src=".\icons\select-icons\samus.png"></th>
-		    <td class="charbox" id="p10"><img src=".\icons\select-icons\falcon.png"></th>
+		    <td class="charbox" id="p9"><img src="./assets/icons/select-icons/luigi.png"></th>
+		    <td class="charbox" id="p1"><img src="./assets/icons/select-icons/mario.png"></th>
+		    <td class="charbox" id="p2"><img src="./assets/icons/select-icons/dk.png"></th>
+		    <td class="charbox" id="p3"><img src="./assets/icons/select-icons/link.png"></th>
+		    <td class="charbox" id="p4"><img src="./assets/icons/select-icons/samus.png"></th>
+		    <td class="charbox" id="p10"><img src="./assets/icons/select-icons/falcon.png"></th>
 		  </tr>
 		  <tr>
-		    <td class="charbox" id="p11"><img src=".\icons\select-icons\ness.png"></td>
-		    <td class="charbox" id="p5"><img src=".\icons\select-icons\yoshi.png"></td> 
-		    <td class="charbox" id="p6"><img src=".\icons\select-icons\kirby.png"></td>
-		    <td class="charbox" id="p7"><img src=".\icons\select-icons\fox.png"></td>
-		    <td class="charbox" id="p8"><img src=".\icons\select-icons\pika.png"></td> 
-		    <td class="charbox" id="p12"><img src=".\icons\select-icons\puff.png"></td>
+		    <td class="charbox" id="p11"><img src="./assets/icons/select-icons/ness.png"></td>
+		    <td class="charbox" id="p5"><img src="./assets/icons/select-icons/yoshi.png"></td>
+		    <td class="charbox" id="p6"><img src="./assets/icons/select-icons/kirby.png"></td>
+		    <td class="charbox" id="p7"><img src="./assets/icons/select-icons/fox.png"></td>
+		    <td class="charbox" id="p8"><img src="./assets/icons/select-icons/pika.png"></td>
+		    <td class="charbox" id="p12"><img src="./assets/icons/select-icons/puff.png"></td>
 		  </tr>
 		  <tr>
-		    <td class="charbox" id="p16"><img src=".\icons\select-icons\squirtle.png"></td>
-		    <td class="charbox" id="p15"><img src=".\icons\select-icons\sonic.png"></td> 
-		    <td class="charbox" id="p13"><img src=".\icons\select-icons\ike.png"></td>
-		    <td class="charbox" id="p14"><img src=".\icons\select-icons\dedede.png"></td>
-		    <td class="charbox" id="p17"><img src=".\icons\select-icons\mii.png"></td> 
-		    <td class="charbox" id="p18"><img src=".\icons\select-icons\gaw.png"></td>
+		    <td class="charbox" id="p16"><img src="./assets/icons/select-icons/squirtle.png"></td>
+		    <td class="charbox" id="p15"><img src="./assets/icons/select-icons/sonic.png"></td>
+		    <td class="charbox" id="p13"><img src="./assets/icons/select-icons/ike.png"></td>
+		    <td class="charbox" id="p14"><img src="./assets/icons/select-icons/dedede.png"></td>
+		    <td class="charbox" id="p17"><img src="./assets/icons/select-icons/mii.png"></td>
+		    <td class="charbox" id="p18"><img src="./assets/icons/select-icons/gaw.png"></td>
 		  </tr>
 		</table>
 		<table id="pgrid">
@@ -151,66 +63,7 @@
 		  	</td>
 		  </tr>
 		</table>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    	<script src=".\lib\notify.js"></script>
+
 	</body>
 </html>
-
-<script>
-var teamLength;
-var gamestate = false;
-$(function () {
-var connection = new WebSocket('ws://127.0.0.1:3000');
-
-connection.onopen = function () {
-        // connection is opened and ready to use
-         connection.send("char");
-    };
-
-connection.onerror = function (error) {
-        // an error occurred when sending/receiving data
-    };
-
-connection.onmessage = function (message) {
-	try {
-          var json = JSON.parse(message.data);
-          console.log(json)
-        }
-        catch (e) {
-          console.log(e)
-          console.log('This doesn\'t look like a valid JSON: ', message.data);
-        }
-    if(gamestate==false){
-    	for(var i=0 ; i<4; i++)
-	    {
-	    	$("#p"+(i+1)+"name").text(json[i]["fullName"])
-	    	$("#p"+(i+1)+"pic").attr("src",".\\icons\\portraits\\"+json[i]["character"]+"\\"+json[i]["character"]+getRandomInt(1,8)+".png")
-	    	$("#p"+(i+1)+"team").text("0")
-	    }
-    }
-    else{  //if game has been
-    	for(var i=0 ; i<4; i++)
-    	{
-    		teamLength = json[i]["team"].length
-    		$("#p"+(i+1)+"team").text(teamLength)
-   		}
-    }
-    
-    //check if game is starting or ending.  change game state accordingly
-    if(json[4]){
-    	if(json[4]=="start"){
-    		gamestate=true;
-    	}
-    	if(json[4]=="end"){
-    		gamestate=false;
-    	}
-    }
-
-}
-});
-
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-</script>
+<script src="assets/js/character.js"></script>

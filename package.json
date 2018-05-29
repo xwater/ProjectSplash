@@ -4,17 +4,26 @@
   "description": "smashbot",
   "main": "splashbot.js",
   "dependencies": {
-    "express": "^4.14.1",
+    "express": "^4.16.3",
     "express-ws": "^3.0.0",
     "jsonfile": "^2.4.0",
-    "sqlite3": "^3.1.13",
-    "tmi.js": "^1.1.2",
-    "uws": "^0.12.0",
-    "websocket": "^1.0.25"
+    "sqlite3": "^4.0.0",
+    "tmi.js": "^1.2.1",
+    "uws": "^10.148.0",
+    "websocket": "^1.0.26"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.12.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.7.0",
+    "eslint-plugin-standard": "^3.1.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node splashbot.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --ext .js, .html ./splashbot.js ./main --fix"
   },
   "author": "",
   "license": "ISC"

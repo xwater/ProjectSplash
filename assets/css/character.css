@@ -1,0 +1,103 @@
+@font-face {
+    font-family: "DFGothic-SU";
+    src: url('../font/DFGothic-SU-WING-RKSJ-H.ttf') format("truetype");
+}
+
+body {
+    background: url("../images/charscreen.png") no-repeat;
+}
+
+.charbox {
+    width: 150px;
+}
+
+.charbox img {
+    width: 180px;
+}
+
+.pbox {
+    width: 340px;
+    height: 430px;
+    padding-right: 11px;
+    position: relative;
+}
+
+#chargrid {
+    position: absolute;
+    left: 170px;
+    top: 80px;
+    margin: auto;
+    width: 50%;
+}
+
+#chargrid tbody tr td {
+    padding: 0;
+}
+
+#pgrid {
+    position: absolute;
+    left: 14px;
+    top: 620px;
+    display: table-row;
+}
+
+.charname {
+    font-family: DFGothic-SU, serif;
+    position: absolute;
+    font-size: 4vw;
+    color: white;
+    text-shadow: 10px -4px 0px rgba(0, 0, 0, 1);
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: black;
+    top: 0px;
+    left: 20px;
+    width: 100%;
+    height: 10px;
+    z-index: 1;
+}
+
+.charimage img {
+    position: absolute;
+    top: 100px;
+    width: 340px;
+    z-index: 0;
+}
+
+.smash-font {
+    font-family: DFGothic-SU, serif;
+}
+
+.teamcount {
+    font-family: DFGothic-SU, serif;
+    position: absolute;
+    font-size: 3vw;
+    color: white;
+    text-shadow: 4px -2px 0px rgba(0, 0, 0, 1);
+    -webkit-text-stroke-width: 3px;
+    -webkit-text-stroke-color: black;
+    bottom: 0;
+    right: 20px;
+    z-index: 1;
+}
+
+.teamcount p {
+    margin: 0;
+    display: inline-block;
+    z-index: 1;
+}
+
+.table > div {
+    display: table-cell;
+    vertical-align: bottom;
+    border: 1px solid black;
+    padding: 10px;
+    height: 200px;
+}
+
+.table > div > div.wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+​

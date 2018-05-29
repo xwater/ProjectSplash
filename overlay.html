@@ -1,473 +1,71 @@
 <html>
-	<head>
-    <style type="text/css">
-      @font-face {
-      font-family: "DFGothic-SU";
-      src: url('.\\font\\DFGothic-SU-WING-RKSJ-H.ttf') format("truetype");
-      }
-      #game-container{
-        position: fixed;
-        bottom: 0;
-        margin-left: 460px;
-        margin-bottom: 40px;
-      }
-      .charinfo{
-        margin-left:-20px;
-      }
-      .charicon{
-        height:110px;
-      }
-      .charbox{
-        float:left;
-        margin:0px 102px;
-      }
-      .lives{
-        font-family:DFGothic-SU;
-      }
-      .kills{
-        margin-top:55px;
-      }
-
-      .kills_count{
-        margin-top:6px;
-        font-family:DFGothic-SU;
-        margin-left:-41px;
-        font-size:30px;
-        -webkit-text-stroke: 1px white;
-      }
-
-      .left{
-        float:left;
-      }
-
-
-
-      .animation{
-        height:400px;
-        z-index: 0;
-      }
-      .new-challenger{
-        width:1920px;
-        height:1080px;
-        margin-top:-205px;
-        margin-left:0px;
-        z-index: 100;
-      }
-      #challenger{
-        z-index: 99;
-      }
-      #Wanimation{
-        z-index: 0;
-        float:left;
-      }
-      #Lanimation{
-        z-index: 0;
-        float:right;
-      }
-      #animation_container{
-        margin-top:300;
-      }
-
-
-
-      @-webkit-keyframes shakeit {
-        0% {
-          -webkit-transform: rotate(-15deg);
-          transform: rotate(-15deg);
-        }
-
-        2% {
-          -webkit-transform: rotate(15deg);
-          transform: rotate(15deg);
-        }
-
-        4% {
-          -webkit-transform: rotate(-18deg);
-          transform: rotate(-18deg);
-        }
-
-        6% {
-          -webkit-transform: rotate(18deg);
-          transform: rotate(18deg);
-        }
-
-        8% {
-          -webkit-transform: rotate(-22deg);
-          transform: rotate(-22deg);
-        }
-
-        10% {
-          -webkit-transform: rotate(22deg);
-          transform: rotate(22deg);
-        }
-
-        12% {
-          -webkit-transform: rotate(-18deg);
-          transform: rotate(-18deg);
-        }
-
-        14% {
-          -webkit-transform: rotate(18deg);
-          transform: rotate(18deg);
-        }
-
-        16% {
-          -webkit-transform: rotate(-12deg);
-          transform: rotate(-12deg);
-        }
-
-        18% {
-          -webkit-transform: rotate(12deg);
-          transform: rotate(12deg);
-        }
-
-        20% {
-          -webkit-transform: rotate(0deg);
-          transform: rotate(0deg);
-        }
-      }
-
-      @keyframes shakeit {
-        0% {
-          -webkit-transform: rotate(-15deg);
-          -ms-transform: rotate(-15deg);
-          transform: rotate(-15deg);
-        }
-
-        2% {
-          -webkit-transform: rotate(15deg);
-          -ms-transform: rotate(15deg);
-          transform: rotate(15deg);
-        }
-
-        4% {
-          -webkit-transform: rotate(-18deg);
-          -ms-transform: rotate(-18deg);
-          transform: rotate(-18deg);
-        }
-
-        6% {
-          -webkit-transform: rotate(18deg);
-          -ms-transform: rotate(18deg);
-          transform: rotate(18deg);
-        }
-
-        8% {
-          -webkit-transform: rotate(-22deg);
-          -ms-transform: rotate(-22deg);
-          transform: rotate(-22deg);
-        }
-
-        10% {
-          -webkit-transform: rotate(22deg);
-          -ms-transform: rotate(22deg);
-          transform: rotate(22deg);
-        }
-
-        12% {
-          -webkit-transform: rotate(-18deg);
-          -ms-transform: rotate(-18deg);
-          transform: rotate(-18deg);
-        }
-
-        14% {
-          -webkit-transform: rotate(18deg);
-          -ms-transform: rotate(18deg);
-          transform: rotate(18deg);
-        }
-
-        16% {.
-          -webkit-transform: rotate(-12deg);
-          -ms-transform: rotate(-12deg);
-          transform: rotate(-12deg);
-        }
-
-        18% {
-          -webkit-transform: rotate(12deg);
-          -ms-transform: rotate(12deg);
-          transform: rotate(12deg);
-        }
-
-        20% {
-          -webkit-transform: rotate(0deg);
-          -ms-transform: rotate(0deg);
-          transform: rotate(0deg);
-        }
-      }
-
-      .shakeit {
-        -webkit-animation: shakeit 2s ease infinite;
-        animation: shakeit 2s ease infinite;
-        transform-origin-x: 50%;
-        transform-origin-y: 0px;
-        transform-origin-z: initial;
-      }
-
-
-    </style>
-	</head>
-	<body style="background-repeat: no-repeat;">
-    <div id="challenger">
-      <video id="video" width="1920" style="display:none; z-index:99;">
-        <source id="mp4src" type="video/mp4" src="./gifs/victory/dedede/dedede.mp4">
-      </video>
-    </div>
-    <div id="animation_container">
+<head>
+    <link rel="stylesheet" href="assets/css/overlay.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="./lib/howler/src/howler.core.js"></script>
+    <script src="./lib/jquery-ui/jquery-ui.min.js"></script>
+</head>
+<body style="background-repeat: no-repeat;">
+<div id="challenger">
+    <video id="video" width="1920" style="display:none; z-index:99;">
+        <source id="mp4src" type="video/mp4" src="./assets/gifs/victory/dedede/dedede.mp4">
+    </video>
+</div>
+<div id="animation_container">
     <div id="Wanimation">
-      <img src="" height="350px" style="display:none">
+        <img src="" height="350px" style="display:none">
     </div>
     <div id="Lanimation">
-      <img src="" height="350px" style="display:none">
+        <img src="" height="350px" style="display:none">
     </div>
-    </div>
-    <div id="game-container">
-		<div class="charbox shake" id="p1">
-      <img class="charicon left" id="p1icon" src=".\icons\dk.png">
-      <div class="charinfo left">
-        <div id="p1lives" class="lives">
-          <img class="left life-icon" id="p1life1" src=".\icons\lives\dkL.png"> 
-          <img class="left life-icon" id="p1life2" src=".\icons\lives\dkL.png"> 
+</div>
+<div id="game-container">
+    <div class="charbox shake" id="p1">
+        <img class="charicon left" id="p1icon" src="./assets/icons/dk.png">
+        <div class="charinfo left">
+            <div id="p1lives" class="lives">
+                <img class="left life-icon" id="p1life1" src="./assets/icons/lives/dkL.png">
+                <img class="left life-icon" id="p1life2" src="./assets/icons/lives/dkL.png">
+            </div>
+            <div class="kills"><img class="left" src="./assets/icons/swordicon-bg.png">
+                <p id="p1kills" class="kills_count left">0</p></div>
         </div>
-        <div class="kills"><img class="left" src="swordicon-bg.png"><p id="p1kills" class="kills_count left">0</p></div>
-      </div>
     </div>
 
-		<div class="charbox" id="p2">
-      <img class="charicon left" id="p2icon" src=".\icons\link.png">
-      <div class="charinfo left">
-        <div id="p2lives" class="lives">
-          <img class="left life-icon" src=".\icons\lives\linkL.png"> 
-          <img class="left life-icon" src=".\icons\lives\linkL.png"> 
+    <div class="charbox" id="p2">
+        <img class="charicon left" id="p2icon" src="./assets/icons/link.png">
+        <div class="charinfo left">
+            <div id="p2lives" class="lives">
+                <img class="left life-icon" src="./assets/icons/lives/linkL.png">
+                <img class="left life-icon" src="./assets/icons/lives/linkL.png">
+            </div>
+            <div class="kills"><img class="left" src="./assets/icons/swordicon-bg.png">
+                <p id="p2kills" class="kills_count left">0</p></div>
         </div>
-        <div class="kills"><img class="left" src="swordicon-bg.png"><p  id="p2kills" class="kills_count left">0</p></div>
-      </div>
     </div>
 
-		<div class="charbox" id="p3">
-      <img class="charicon left" id="p3icon" src=".\icons\fox.png">
-      <div class="charinfo left">
-        <div id="p3lives" class="lives">
-          <img class="left life-icon" src=".\icons\lives\foxL.png"> 
-          <img class="left life-icon" src=".\icons\lives\foxL.png"> </div>
-        <div class="kills"><img class="left" src="swordicon-bg.png"><p  id="p3kills" class="kills_count left">0</p></div>
-      </div>
+    <div class="charbox" id="p3">
+        <img class="charicon left" id="p3icon" src="./assets/icons/fox.png">
+        <div class="charinfo left">
+            <div id="p3lives" class="lives">
+                <img class="left life-icon" src="./assets/icons/lives/foxL.png">
+                <img class="left life-icon" src="./assets/icons/lives/foxL.png"></div>
+            <div class="kills"><img class="left" src="./assets/icons/swordicon-bg.png">
+                <p id="p3kills" class="kills_count left">0</p></div>
+        </div>
     </div>
 
-		<div class="charbox" id="p4">
-      <img class="charicon left" id="p4icon" src=".\icons\yoshi.png">
-      <div class="charinfo left">
-        <div id="p4lives" class="lives">
-          <img class="left life-icon" src=".\icons\lives\yoshiL.png"> 
-          <img class="left life-icon" src=".\icons\lives\yoshiL.png"> </div>
-        <div class="kills"><img class="left" src="swordicon-bg.png"><p id="p4kills" class="kills_count left">0</p></div>
-      </div>
+    <div class="charbox" id="p4">
+        <img class="charicon left" id="p4icon" src="./assets/icons/yoshi.png">
+        <div class="charinfo left">
+            <div id="p4lives" class="lives">
+                <img class="left life-icon" src="./assets/icons/lives/yoshiL.png">
+                <img class="left life-icon" src="./assets/icons/lives/yoshiL.png"></div>
+            <div class="kills"><img class="left" src="./assets/icons/swordicon-bg.png">
+                <p id="p4kills" class="kills_count left">0</p></div>
+        </div>
     </div>
-  </div>
-
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <script src=".\lib\howler\src\howler.core.js"></script>
-    <!--
-      notify - old system for displaying GIFS, pre-loaded ALL gifs, too much system resources
-    <script src=".\lib\notify.js"></script>
-    <script src=".\lib\animations.js"></script>
-    -->
-    <script src=".\lib\jquery-ui\jquery-ui.min.js"></script>
-	</body>
+</div>
+</body>
 </html>
-
-<script>
-$(function () {
-var connection = new WebSocket('ws://127.0.0.1:3000');
-var audioToPlay = []
-var miiPrefix = ["s","g","f"]
-connection.onopen = function () {
-        // connection is opened and ready to use
-         connection.send("animation");
-    };
-
-connection.onerror = function (error) {
-        // an error occurred when sending/receiving data
-    };
-//json[0] to json[3] are character objects.  [4] is winning char, [5] is losing char, [6] isset if game is over with winning char, [7] is set if there is a character unlock
-connection.onmessage = function (message) {
-        // try to decode json (I assume that each message from server is json)
-        try {
-          var json = JSON.parse(message.data);
-          console.log(json)
-        }
-        catch (e) {
-          console.log(e)
-          console.log('This doesn\'t look like a valid JSON: ', message.data);
-        }
-
-        //unlocking a character
-        if(json[7]){
-          //$("#challenger").notify("a", {style:"challenger",autoHideDelay: 6000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'});
-          playGif("#challenger",6000,"./gifs/misc/challenger.gif")
-
-          audioToPlay = ['.\\sfx\\announcer\\'+json[7]+".wav",'.\\sfx\\'+json[7]+'\\chime\\'+json[7]+"1",'.\\sfx\\misc\\challenger.ogg']
-          playAudio(audioToPlay)
-
-          setTimeout(function(){
-            //$("#Wanimation").notify("a", {style:""+json[7]+"1",autoHideDelay: 8000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'})
-            //$("#Lanimation").notify("a", {style:""+json[7]+"1",autoHideDelay: 8000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'})
-            playGif("#Wanimation",8000,"./gifs/win/"+json[7]+"/"+json[7]+getRandomInt(1,3)+".gif")
-            playGif("#Lanimation",8000,"./gifs/win/"+json[7]+"/"+json[7]+getRandomInt(1,3)+".gif")
-            //var announcer = new Audio('.\\sfx\\announcer\\'+json[7]+".wav");
-            //announcer.volume = 0.4;
-            //announcer.play();
-          },6000)
-          generateOverlay(json);
-          return;
-        }
-        
-        //play the winning
-        if(json[6]){
-          //$("#challenger").notify("a", {style:""+json[6]+"1-w",autoHideDelay: 7600,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'});
-
-          playVideo(7600,"./gifs/victory/"+json[6]+"/"+json[6]+".mp4")
-          audioToPlay=['.\\sfx\\announcer\\'+json[6]+".wav",'.\\sfx\\announcer\\'+"winner"+".wav",'.\\sfx\\'+json[6]+'\\chime\\'+json[6]+"1"]
-          playAudio(audioToPlay)
-
-          setTimeout(function(){
-            //$("#Wanimation").notify("a", {style:""+json[7]+"1",autoHideDelay: 8000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'})
-            //$("#Lanimation").notify("a", {style:""+json[7]+"1",autoHideDelay: 8000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'})
-            //var announcer = new Audio('.\\sfx\\announcer\\'+json[7]+".wav");
-            //announcer.volume = 0.4;
-            //announcer.play();
-          },6000)
-          generateOverlay(json);
-          return;
-        }
-
-        //regular kill scenario
-        if(typeof json[4] != 'undefined'){
-          //var audio = new Audio('.\\sfx\\'+json[json[4]]["character"]+'\\taunt\\'+json[json[4]]["character"]+getRandomInt(1,5))
-         console.log('.\\sfx\\'+json[json[4]]["character"]+'\\taunt\\'+json[json[4]]["character"]+getRandomInt(1,5))
-        
-          if(json[6]){
-            audioToPlay=['.\\sfx\\announcer\\'+json[6]+".wav",'.\\sfx\\announcer\\'+"winner"+".wav",'.\\sfx\\'+json[json[4]]["character"]+'\\taunt\\'+json[json[4]]["character"]+getRandomInt(1,5),'.\\sfx\\'+json[json[4]]["character"]+'\\chime\\'+json[json[4]]["character"]+"1"]
-          }
-          else{
-            audioToPlay=['.\\sfx\\'+json[json[4]]["character"]+'\\taunt\\'+json[json[4]]["character"]+getRandomInt(1,5),'.\\sfx\\'+json[json[4]]["character"]+'\\chime\\'+json[json[4]]["character"]+"1"]
-          }
-          playAudio(audioToPlay);
-          var winnerC = json[json[4]]["character"]
-          var loserC = json[json[5]]["character"]
-          if(winnerC == "mii"){
-            winnerC=miiPrefix[getRandomInt(1,3)-1]+"mii";
-          }
-          if(loserC == "mii"){
-            loserC=miiPrefix[getRandomInt(1,3)-1]+"mii";
-          }
-          //$("#Wanimation").notify("a", {style:""+winnerC+""+getRandomInt(1,3),autoHideDelay: 8000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'})
-          playGif("#Wanimation",8000,"./gifs/win/"+winnerC+"/"+winnerC+getRandomInt(1,3)+".gif")
-          //$("#Lanimation").notify("a", {style:""+loserC+"1-d",autoHideDelay: 8000,autoHide: true,arrowShow: false,showAnimation: 'fadeIn',hideAnimation: 'fadeOut'})
-          playGif("#Lanimation",8000,"./gifs/lose/"+loserC+"/"+loserC+"1.gif")
-          console.log("#p"+(json[5]+1));
-          $("#p"+(json[5]+1)).addClass("shakeit");
-          setTimeout(function() {
-            $("#p"+(json[5]+1)).removeClass("shakeit");
-          }, 2000);  
-        }
-          generateOverlay(json)
-          
-      }
-});
-
-
-/*
-playVideo(7600,"./gifs/victory/falcon/falcon.mp4")
-
-setTimeout(function(){
- playVideo(7600,"./gifs/victory/fox/fox.mp4") 
-},10000)
-*/
-
-function playVideo(duration, path)
-{
-  $("#video").fadeIn()
-  $("#mp4src").fadeIn()
-  document.getElementById("mp4src").src = path;
-  document.getElementById("video").load();
-  document.getElementById("video").play();
-  setTimeout(function(){
-    $("#video").fadeOut()
-    $("#mp4src").fadeOut()
-  },duration)
-}
-
-
-//todo play video
-
-function playGif(DOMid, duration, path)
-{
-  $(DOMid).find("img").attr("src",path).fadeIn()
-
-  setTimeout(function(){
-    $(DOMid).find("img").fadeOut()
-  },duration);
-
-}
-
-function generateOverlay(players){
-for(var i=0;i<4;i++)
-  {
-    $("#p"+(i+1)+"icon").attr("src",".\\icons\\"+players[i]["character"]+".png")
-    //$("#p"+(i+1)+"lives").text("Lives Left:" + players[i]["lives"])
-    lifeIcons(players[i]["character"],players[i]["lives"],(i+1));
-    $("#p"+(i+1)+"kills").text(players[i]["kills"])
-    if(players[i]["alive"]==false){
-      console.log("did the kill thing to "+ players[i]["character"])
-    }
-  }
-}
-
-function lifeIcons(character,lives,pos){
-  //remove all lives
-  $("#p"+(pos)+"lives").empty()
-  //populate with the amount of lives needed
-  for(var i=0;i<lives;i++){
-    $("#p"+(pos)+"lives").append('<img class="left life-icon" src=".\\icons\\lives\\'+ character +'L.png">')
-  }
-}
-
-//plays audio, arg is path of sound to play.  if multiple files, will play sequentially
-function playAudio(args){
-  console.log(args)
- var audio = [];
- audio[0] = new Howl({
-    src: [args[0]],
-    format: ['ogg', 'wav', 'mp3'],
-    volume: 0.3
-  });
-
-  //if only 1 sound passed, play that one sound
-  if(args.length==1){
-    audio[0].play()
-    return;
-  }
-
-  //build sequential sounds to play
-  for (var i=1;i<args.length;++i){
-    (function(cntr) {
-    audio[i]= new Howl({
-      src: [args[cntr]],
-      format: ['ogg', 'wav', 'mp3'],
-      volume: 0.5,
-      onend: function() {
-          audio[cntr-1].play()
-        }
-      });
-      console.log(i)
-      })(i);
-  }
-
-  audio[args.length-1].play()
-}
-
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-</script>
+<script src="assets/js/overlay.js" type="text/javascript"></script>
