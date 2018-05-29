@@ -15,6 +15,7 @@
 Start by setting up the ```config.js``` file. You will need to set up the following sections:
 
 ```javascript
+  serverPort: 3000, //change this port if you are running something on 3000
   identity: {
     username: 'WeebBot', // bot username
     password: 'oauth:asdasdasdsadasdasdasdsadadaasdsad', // oauth token with the 'oauth:' prefix
