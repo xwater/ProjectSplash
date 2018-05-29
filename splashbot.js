@@ -7,9 +7,26 @@ const http = require('http')
 const tmi = require('tmi.js')
 const sqlite3 = require('sqlite3').verbose()
 
-let GameID = -1
-let KillID = -1
-let Season = 1
+const gameState = {
+  generated: false,
+  admin_connected: false,
+  char_connected: false,
+  in_progress: false,
+  overlay_connected: false,
+  ready: false,
+  error: null,
+  gameID: -1,
+  killID: -1,
+  season: 1,
+  suddenDeath: -1,
+  canEnter: false,
+  players: []
+}
+const webSockets = {
+  animation: null,
+  admin: null,
+  char: null
+}
 
 // generate character pools
 let charPool = require('./main/characters').charPool
@@ -17,16 +34,12 @@ let charPool = require('./main/characters').charPool
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
 let statsDB = new sqlite3.Database('./stats.db')
 // global variable declarations
-let players = []
 
 // import aliases for characters
 let aliases = require('./main/aliases')
 
 let entries = []
 let pools = []
-let gameState = false
-let canEnter = false
-let SD = -1
 let suddenDeath = ['Broke Man', 'Unstoppable', 'Pacifist', 'Champion']
 let suddenDeathDescriptions = ['Broke Man is a 100 man easy Coinless run.  If he touches a single coin, the team with a remaining life wins (Red Coins Excluded)',
   'Unstoppable is a 100 man easy Deathless run.  If xwater dies, the team with a remaining stock wins.',
@@ -38,8 +51,6 @@ let client = new tmi.client(config)
 
 client.connect()
 
-// connections that need to be stored
-let websockets = {}
 let server = http.createServer(function (request, response) {
   // process HTTP request. Since we're writing just WebSockets server
   // we don't have to implement anything.
@@ -60,33 +71,75 @@ wsServer.on('request', function (request) {
   // all messages from users here.
   connection.on('message', function (message) {
     if (message.type === 'utf8') {
-      // console.log(message.utf8Data);
-      // console.log(Object.keys(websockets).length);
-      // process WebSocket message
       if (message.utf8Data === 'animation') {
-        websockets['animation'] = connection// store websocket for animation
+        gameState.overlay_connected = true
+        webSockets.animation = connection// store websocket for animation
+        webSockets.admin.send(JSON.stringify(gameState))
         console.log('animation connected!')
-      } else if (message.utf8Data === 'admin') {
-        websockets['admin'] = connection// store websocket for admin
+      }
+
+      if (message.utf8Data === 'animation-close') {
+        gameState.overlay_connected = false
+        webSockets.admin.send(JSON.stringify(gameState))
+        webSockets.animation = null
+      }
+
+      if (message.utf8Data === 'admin') {
+        gameState.admin_connected = true
+        webSockets.admin = connection// store websocket for admin
+        webSockets.admin.send(JSON.stringify(gameState))
         console.log('admin connected!')
-      } else if (message.utf8Data === 'char') {
-        websockets['char'] = connection// store websocket for admin
+
+        // If the character connected socket is connected and are characters are populated update the char select screen
+        if (gameState.char_connected === true && gameState.players.length >= 4) {
+          webSockets.char.send(JSON.stringify(gameState))
+        }
+      }
+
+      if (message.utf8Data === 'admin-close') {
+        gameState.admin_connected = false
+        webSockets.admin = null
+      }
+
+      if (message.utf8Data === 'char') {
+        gameState.char_connected = true
+        webSockets.char = connection// store websocket for admin
+        webSockets.char.send(JSON.stringify(gameState))
+
         console.log('Char select connected!')
-      } else if (message.utf8Data === 'generate') {
-        if (Object.keys(websockets).length < 3) {
-          connection.sendUTF(JSON.stringify('The animation is not connected'))
+      }
+
+      if (message.utf8Data === 'char-close') {
+        gameState.char_connected = false
+        webSockets.char = null
+        webSockets.admin.send(JSON.stringify(gameState))
+      }
+
+      if (message.utf8Data === 'generate') {
+        if (gameState.overlay_connected === false) {
+          gameState.error = 'Overlay is not connected'
+          webSockets.admin.send(JSON.stringify(gameState))
+        } else if (gameState.char_connected === false) {
+          gameState.error = 'Character selection is not connected'
+          webSockets.admin.send(JSON.stringify(gameState))
         } else {
-          websockets['admin'].sendUTF(JSON.stringify('ready'))
+          gameState.generated = true
+          gameState.error = null
+          webSockets.admin.send(JSON.stringify(gameState))
           startGame()
         }
-      } else if (message.utf8Data === 'start') {
+      }
+
+      if (message.utf8Data === 'start') {
         // close entry to the game
-        websockets['admin'].sendUTF(JSON.stringify('gamestart'))
-        canEnter = false
+        gameState.in_progress = true
+        webSockets.admin.send(JSON.stringify(gameState))
+
+        gameState.canEnter = false
         client.action(config.channels[0], 'Game has begun! Only !random will join, !team to check.')
       } else {
         // choose a player to kill
-        if (SD === -1) {
+        if (gameState.suddenDeath === -1) {
           switch (message.utf8Data) {
             case '1':
               killPlayer(0)
@@ -101,7 +154,7 @@ wsServer.on('request', function (request) {
               killPlayer(3)
               break
           }
-        } else if (SD >= 0) {
+        } else if (gameState.suddenDeath >= 0) {
           console.log('sudden death! Msg: ' + message.utf8Data)
           switch (message.utf8Data) {
             case '1':
@@ -127,9 +180,9 @@ wsServer.on('request', function (request) {
 function chooseChars () {
   pools = []
   while (pools.length < 4) {
-    let randomnumber = getRandomInt(0, (Object.keys(charPool).length) - 1)
-    if (pools.indexOf(randomnumber) > -1) continue
-    pools[pools.length] = randomnumber
+    let randomNumber = getRandomInt(0, (Object.keys(charPool).length) - 1)
+    if (pools.indexOf(randomNumber) > -1) continue
+    pools[pools.length] = randomNumber
   }
 }
 
@@ -143,35 +196,35 @@ function startGame () {
   // reset entries and players
   entries = []
   for (let i = 0; i < 4; i++) {
-    players[i] = new Player(pools[i], charPool[pools[i]], i)
+    gameState.players[i] = new Player(pools[i], charPool[pools[i]], i)
   }
-  console.log(players[0].fullName + ' ' + players[1].fullName + ' ' + players[2].fullName + ' ' + players[3].fullName)
+  console.log(gameState.players[0].fullName + ' ' + gameState.players[1].fullName + ' ' + gameState.players[2].fullName + ' ' + gameState.players[3].fullName)
   // make entry in games table of statsDB
-  statsDB.run('INSERT INTO Games (season, P1c, P2c, P3c, P4c) VALUES (' + Season + ',"' + players[0].character + '","' + players[1].character + '","' + players[2].character + '","' + players[3].character + '")')
+  statsDB.run('INSERT INTO Games (season, P1c, P2c, P3c, P4c) VALUES (' + gameState.season + ',"' + gameState.players[0].character + '","' + gameState.players[1].character + '","' + gameState.players[2].character + '","' + gameState.players[3].character + '")')
   // grab the GameID
   statsDB.get('SELECT max(GameID) from Games', function (err, row) {
     if (err) {
       // TODO Probably shouldn't just crash if there is an error
       throw (err)
     }
-    GameID = row['max(GameID)']
+    gameState.gameID = row['max(GameID)']
   })
-  KillID = 0
-  websockets['animation'].sendUTF(JSON.stringify(players))
-  // send a "game start" message in [4] of char select screen
-  let msg = JSON.parse(JSON.stringify(players))
-  msg[4] = 'start'
-  websockets['char'].sendUTF(JSON.stringify(msg))
-  gameState = true
-  canEnter = true
+  gameState.killID = 0
+  webSockets.animation.send(JSON.stringify(gameState))
+
+  gameState.generated = true
+  gameState.canEnter = true
+
+  /* send a "game start" message in [4] of char select screen */
+  webSockets.char.send(JSON.stringify(gameState))
 }
 
 function chooseTarget (safe) {
   // array where key is random number, value is player ID of who to kill
   let targets = []
-  for (var i = 0; i < 4; ++i) {
+  for (let i = 0; i < 4; ++i) {
     if (i !== safe) {
-      for (var j = 0; j < players[i].lives; j++) {
+      for (let j = 0; j < gameState.players[i].lives; j++) {
         targets.push(i)
       }
     }
@@ -182,23 +235,23 @@ function chooseTarget (safe) {
 }
 
 function killPlayer (safe) {
-  console.log(players[0].fullName + ' ' + players[1].fullName + ' ' + players[2].fullName + ' ' + players[3].fullName)
-  if (!gameState) { return }
+  console.log(gameState.players[0].fullName + ' ' + gameState.players[1].fullName + ' ' + gameState.players[2].fullName + ' ' + gameState.players[3].fullName)
+  if (!gameState.generated) { return }
   let winChar
   // choose target, avoid self and dead targets
   let target = chooseTarget(safe)
   console.log('chosen target is ' + target)
-  players[target].lives--
+  gameState.players[target].lives--
   // make sure to mark player as dead if they are dead
-  if (players[target].lives === 0) {
-    players[target].alive = false
+  if (gameState.players[target].lives === 0) {
+    gameState.players[target].alive = false
   }
   // give the safe player the kill
-  players[safe].kills++
-  console.log(players[safe].character + ' just killed ' + players[target].character + '. They now have ' + players[target].lives + ' lives left.')
+  gameState.players[safe].kills++
+  console.log(gameState.players[safe].character + ' just killed ' + gameState.players[target].character + '. They now have ' + gameState.players[target].lives + ' lives left.')
   // log kill
-  KillID++
-  statsDB.run('INSERT INTO Kills (GameID,KillID,player,target) VALUES (?,?,?,?)', [GameID, KillID, players[safe].character, players[target].character], function (err) {
+  gameState.killID++
+  statsDB.run('INSERT INTO Kills (GameID,KillID,player,target) VALUES (?,?,?,?)', [gameState.gameID, gameState.killID, gameState.players[safe].character, gameState.players[target].character], function (err) {
     console.log(err)
   })
   // check to see if the game is over
@@ -208,60 +261,72 @@ function killPlayer (safe) {
   if (done === true) {
     let winners = pickWinners()
     if (winners.length === 1) {
-      // unlock = Unlockables(winners[0]) //TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
-      payout(winners[0], 0, '', GameID)
-      endGame()
+      // TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
+      // unlock = Unlockables(winners[0])
+      payout(winners[0], 0, '', gameState.gameID)
       winChar = winners[0]['character']
     } else if (winners.length === 2) {
       // sudden death here
-      SD = getRandomInt(0, 3)
-      client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[SD])
-      client.action(config.channels[0], suddenDeathDescriptions[SD])
+      gameState.suddenDeath = getRandomInt(0, 3)
+      client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
+      client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
       winners.push('SD')
-      websockets['admin'].sendUTF(JSON.stringify(winners))
+      webSockets.admin.send(JSON.stringify(winners))
     } else {
       // payout all
       for (let i = 0; i < 4; i++) {
-        payout(players[i], 0, '', GameID)
+        payout(gameState.players[i], 0, '', gameState.gameID)
       }
-      endGame()
     }
+    endGame()
   }
   // build message for animation
-  let msg = JSON.parse(JSON.stringify(players))
+  let msg = JSON.parse(JSON.stringify(gameState.players))
   msg[4] = safe
   msg[5] = target
   if (winChar) { msg[6] = winChar }
   // if (unlock) { msg[7] = unlock }
   console.log(JSON.stringify(msg))
-  websockets['animation'].sendUTF(JSON.stringify(msg))
+  webSockets.animation.send(JSON.stringify(msg))
 }
 
 function SDwinner (winner) {
-  // let unlock = Unlockables(players[winner]) //TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
-  payout(players[winner], (players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', GameID)
-  console.log('ALERT!!@#!#!@#@!' + JSON.stringify(players[winner].character))
-  let msg = JSON.parse(JSON.stringify(players))
+  // TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
+  // let unlock = Unlockables(players[winner])
+  payout(gameState.players[winner], (gameState.players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', gameState.gameID)
+  console.log('ALERT!!@#!#!@#@!' + JSON.stringify(gameState.players[winner].character))
+  let msg = JSON.parse(JSON.stringify(gameState.players))
   let winners = pickWinners()
 
   msg[4] = winner
   // grab both winners again, put loser position into msg[5]
   if (winners[0].pos === winner) { msg[5] = winners[1].pos } else { msg[5] = winners[0].pos }
-  msg[6] = players[winner].character
+  msg[6] = gameState.players[winner].character
   // if (unlock) { msg[7] = unlock }
-  websockets['animation'].sendUTF(JSON.stringify(msg))
+  webSockets.animation.send(JSON.stringify(msg))
   endGame()
 }
 
 function endGame () {
-  SD = -1
-  gameState = false
-  GameID = -1
-  KillID = -1
-  websockets['admin'].sendUTF(JSON.stringify('gamedone'))
-  let charmsg = JSON.parse(JSON.stringify(players))
-  charmsg[4] = 'end'
-  websockets['char'].sendUTF(JSON.stringify(charmsg))
+  // Update the state and send it to the client
+  resetState()
+
+  webSockets.admin.send(JSON.stringify(gameState))
+  // Update the character selection screen
+  webSockets.char.send(JSON.stringify(gameState))
+}
+
+function resetState () {
+  gameState.suddenDeath = -1
+  gameState.gameID = -1
+  gameState.killID = -1
+  gameState.in_progress = false
+  gameState.generated = false
+  gameState.canEnter = false
+  gameState.ready = false
+  gameState.error = false
+  gameState.canEnter = false
+  gameState.players = []
 }
 
 function pickWinners () {
@@ -269,16 +334,16 @@ function pickWinners () {
   let topScore = 0
   // calculate top score and each player's score
   for (let i = 0; i < 4; i++) {
-    scores[i] = players[i].kills + (players[i].lives * 2)
+    scores[i] = gameState.players[i].kills + (gameState.players[i].lives * 2)
     if (scores[i] > topScore) {
       topScore = scores[i]
     }
   }
-  // put all players with topscore into winner array, return.
+  // put all players with top score into winner array, return.
   let winners = []
   for (let j = 0; j < 4; j++) {
     if (scores[j] === topScore) {
-      winners.push(players[j])
+      winners.push(gameState.players[j])
     }
   }
 
@@ -286,14 +351,14 @@ function pickWinners () {
 }
 
 function isOver () {
-  let alivect = 0
+  let aliveCount = 0
   for (let i = 0; i < 4; i++) {
-    if (players[i].alive === true) {
-      alivect++
+    if (gameState.players[i].alive === true) {
+      aliveCount++
     }
   }
-  if (alivect === 1) {
-    gameState = false
+  if (aliveCount === 1) {
+    gameState.generated = false
     return true
   }
   return false
@@ -328,7 +393,7 @@ function isOver () {
 //   console.log(unlock + ' Has joined the battle!')
 //   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
 //   var unlockAni = {'challenger': unlock}
-//   websockets['animation'].sendUTF(JSON.stringify(unlockAni))
+//   webSockets.animation.sendUTF(JSON.stringify(unlockAni))
 //   return unlock
 // }
 
@@ -350,10 +415,10 @@ function payout (winner, bonus, message, GID) {
   // if (bonus>0){ message= message + "Bonus Sheckels earned: " + bonus}
   // record stats
   statsDB.run('UPDATE Games SET P1s=?, P2s=?,P3s=?,P4s=?,prize=? WHERE GameID = ?',
-    [players[0].kills + (players[0].lives * 2),
-      players[1].kills + (players[1].lives * 2),
-      players[2].kills + (players[2].lives * 2),
-      players[3].kills + (players[3].lives * 2),
+    [gameState.players[0].kills + (gameState.players[0].lives * 2),
+      gameState.players[1].kills + (gameState.players[1].lives * 2),
+      gameState.players[2].kills + (gameState.players[2].lives * 2),
+      gameState.players[3].kills + (gameState.players[3].lives * 2),
       pay, GID])
 
   console.log(winner.team)
@@ -369,9 +434,9 @@ function payout (winner, bonus, message, GID) {
 
 function calcPay (winners) {
   let baseRate = entries.length * 10
-  // bonus greater for smaller teams.  = (1-%ofplayers)+1
+  // bonus greater for smaller teams.  = (1-% of players)+1
   let bonus = (1 - (winners.team.length / entries.length) + 1)
-  // multiply the baserate by the bonus
+  // multiply the base rate by the bonus
   let pay = bonus * baseRate
   console.log('calculated payrate: ' + pay)
 
@@ -382,19 +447,19 @@ function findTeam (username) {
   console.log('checking team 1')
   if (entries.indexOf(username) !== -1) {
     console.log('checking team 2')
-    for (var i = 0; i < 4; i++) {
-      if (players[i].team.indexOf(username) !== -1) {
+    for (let i = 0; i < 4; i++) {
+      if (gameState.players[i].team.indexOf(username) !== -1) {
         console.log('found it!')
-        return username + ' is on team ' + players[i].fullName + '!'
+        return username + ' is on team ' + gameState.players[i].fullName + '!'
       }
     }
   }
 }
 
-// stores user in the DB if user isnt already in
+// stores user in the DB if user isn't already in
 
 function storeUser (username) {
-  statsDB.get('SELECT * from Users where User = \'' + username + '\' and Season = ' + Season, function (err, row) {
+  statsDB.get('SELECT * from Users where User = \'' + username + '\' and Season = ' + gameState.season, function (err, row) {
     if (err) {
       // TODO Probably shouldn't just crash if there is an error
       throw (err)
@@ -403,7 +468,7 @@ function storeUser (username) {
       console.log('User found in table')
     } else {
       console.log('NOT FOUND! ENTER IT HERE')
-      statsDB.run('INSERT INTO Users VALUES (\'' + username + '\',0,0,0,0,' + Season + ')')
+      statsDB.run('INSERT INTO Users VALUES (\'' + username + '\',0,0,0,0,' + gameState.season + ')')
     }
   })
   console.log('done checkin')
@@ -416,10 +481,10 @@ client.on('chat', function (channel, user, message, self) {
     client.timeout(config.channels[0], user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')
   }
 
-  if (!gameState) { return }
-  if (SD >= 0) {
-    if (message.toLowerCase() === '!' + suddenDeath[SD].toLowerCase().replace(' ', '')) {
-      client.action('config.channels[0]', suddenDeathDescriptions[SD])
+  if (!gameState.generated) { return }
+  if (gameState.suddenDeath >= 0) {
+    if (message.toLowerCase() === '!' + suddenDeath[gameState.suddenDeath].toLowerCase().replace(' ', '')) {
+      client.action('config.channels[0]', suddenDeathDescriptions[gameState.suddenDeath])
       console.log('got the message for SD')
     }
   }
@@ -436,11 +501,11 @@ client.on('chat', function (channel, user, message, self) {
       if (entries.indexOf(user['username']) === -1) {
         entries.push(user['username'])
         let randTeam = getRandomInt(0, 3)
-        players[randTeam].team.push(user['username'])
-        client.action(config.channels[0], user['username'] + ' joined team ' + players[randTeam].fullName + '!')
+        gameState.players[randTeam].team.push(user['username'])
+        client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
         storeUser(user['username'])
-        statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [GameID, user['username'], players[randTeam].character, 1, randTeam])
-        websockets['char'].sendUTF(JSON.stringify(players))
+        statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [gameState.gameID, user['username'], gameState.players[randTeam].character, 1, randTeam])
+        webSockets.char.send(JSON.stringify(gameState.players))
         return
       } else {
         msg = findTeam(user['username'])
@@ -448,22 +513,22 @@ client.on('chat', function (channel, user, message, self) {
         return
       }
     }
-    if (!canEnter) {
-      if (message.toLowerCase() === '!' + players[i].character || aliases[players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
+    if (!gameState.canEnter) {
+      if (message.toLowerCase() === '!' + gameState.players[i].character || aliases[gameState.players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
         if (entries.indexOf(user['username']) === -1) {
           client.action(config.channels[0], 'Entries are closed! !random to join a team')
           return
         }
       }
     }
-    if (message.toLowerCase() === '!' + players[i].character || aliases[players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
+    if (message.toLowerCase() === '!' + gameState.players[i].character || aliases[gameState.players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
       if (entries.indexOf(user['username']) === -1) {
         entries.push(user['username'])
-        players[i].team.push(user['username'])
-        client.action(config.channels[0], user['username'] + ' joined team ' + players[i].fullName + '!')
-        statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [GameID, user['username'], players[i].character, 0, i])
+        gameState.players[i].team.push(user['username'])
+        client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[i].fullName + '!')
+        statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [gameState.gameID, user['username'], gameState.players[i].character, 0, i])
         storeUser(user['username'])
-        websockets['char'].sendUTF(JSON.stringify(players))
+        webSockets.char.send(JSON.stringify(gameState.players))
         return
       } else {
         msg = findTeam(user['username'])

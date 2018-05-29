@@ -1,10 +1,20 @@
 $(function () {
-  let start = $('#start')
+  let startBtn = $('#start')
+
+  let overlay = $('#overlay')
+  let charScreen = $('#char-screen')
+  let generateBtn = $('#generate')
+  let admin = $('#admin')
 
   const connection = new WebSocket('ws://127.0.0.1:3000')
+
+  window.onbeforeunload = function () {
+    connection.send('admin-close')
+  }
+
   hidePlayers('')
   hidePlayers('sd')
-  start.hide()
+  startBtn.hide()
   connection.onopen = function () {
     hideErrors()
     // connection is opened and ready to use
@@ -21,42 +31,62 @@ $(function () {
   }
 
   connection.onmessage = function (message) {
-    // try to decode json (I assume that each message from server is json)
-    try {
-      const json = JSON.parse(message.data)
-      console.log(json)
-      if (json === 'ready') {
-        start.show()
-        $('#generate').hide()
-      }
+    console.log(message)
+    const data = JSON.parse(message.data)
+    // updateState(JSON.stringify(data, null, '  '))
 
-      if (json === 'gamestart') {
+    // Display Any Errors
+    if (data.error !== null) {
+      showErrors(data.error)
+    } else {
+      hideErrors()
+    }
+
+    // Game has been generated
+    if (data.generated === true) {
+      generateBtn.hide()
+      if (data.in_progress === true) {
         showPlayers('')
-        start.hide()
-      } else if (json === 'gamedone') {
+        startBtn.hide()
+      } else {
         hidePlayers('')
-        $('#generate').show()
-      } else if (typeof json[1] !== 'undefined' && typeof json[2] !== 'undefined') {
-        // meant for sudden death scenario
-        if (json[2] !== 'SD') { return }
-        console.log('doing the thing')
-        hidePlayers('')
-        $('#p' + (json[0].pos + 1)).show()
-        $('#p' + (json[1].pos + 1)).show()
-      } else if (json === 'The animation is not connected') {
-        showErrors('The overlay window or character selection screen is not open. If they are open please refresh this page and the other two windows and try again.')
+        startBtn.show()
       }
+    } else {
+      generateBtn.show()
+      hidePlayers('')
+    }
 
-      // socket connected messages
+    if (typeof data[1] !== 'undefined' && typeof data[2] !== 'undefined') {
+      // meant for sudden death scenario
+      if (data[2] !== 'SD') { return }
+      console.log('doing the thing')
+      hidePlayers('')
+      $('#p' + (data[0].pos + 1)).show()
+      $('#p' + (data[1].pos + 1)).show()
+    }
 
-      if (json === 'animation') {
-        addConnection('Overlay Connected')
-      }
-      if (json === 'char') {
-        addConnection('Character Selection Connected')
-      }
-    } catch (e) {
-      console.log('This doesn\'t look like a valid JSON: ', message.data)
+    if (data === 'The animation is not connected') {
+      showErrors('The overlay window or character selection screen is not open. If they are open please refresh this page and the other two windows and try again.')
+    }
+
+    // socket connected messages
+
+    if (data.overlay_connected === true) {
+      overlay.show()
+    } else {
+      overlay.hide()
+    }
+    if (data.char_connected === true) {
+      charScreen.show()
+    } else {
+      charScreen.hide()
+    }
+
+    if (data.admin_connected === true) {
+      admin.show()
+    } else {
+      admin.hide()
     }
   }
 
@@ -86,10 +116,10 @@ $(function () {
   $('#p4').click(function () {
     connection.send('4')
   })
-  start.click(function () {
+  startBtn.click(function () {
     connection.send('start')
   })
-  $('#generate').click(function () {
+  generateBtn.click(function () {
     connection.send('generate')
   })
 })
@@ -120,8 +150,6 @@ function hideStatusMessage () {
   counter.text('')
 }
 
-function addConnection (text) {
-  let connections = $('#connections')
-  connections.show()
-  connections.append(text + '<br>')
+function updateState (state) {
+  $('#state').text(state)
 }
