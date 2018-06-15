@@ -1,11 +1,11 @@
 // includes
 const config = require('./config')
 const Player = require('./main/Player')
+const statsDB = require('./main/database').db
 
 const WebSocketServer = require('websocket').server
 const http = require('http')
 const tmi = require('tmi.js')
-const sqlite3 = require('sqlite3').verbose()
 
 const gameState = {
   generated: false,
@@ -22,21 +22,27 @@ const gameState = {
   canEnter: false,
   players: []
 }
+
 const webSockets = {
   animation: null,
   admin: null,
   char: null
 }
 
+// let characters = []
+
 // generate character pools
-let charPool = require('./main/characters').charPool
+let characters = require('./main/characters')
+let charPool = characters.createCharacters()
+
+// let charPool = require('./main/characters').charPool
 // DB connection
 // var db = new sqlite3.Database("C:\\Users\\xwater\\AppData\\Roaming\\AnkhHeart\\AnkhBotR2\\Twitch\\Databases\\CurrencyDB.sqlite");
-let statsDB = new sqlite3.Database('./stats.db')
+// let statsDB = new sqlite3.Database('./stats.db')
 // global variable declarations
 
 // import aliases for characters
-let aliases = require('./main/aliases')
+// let aliases = require('./main/aliases')
 
 let entries = []
 let pools = []
@@ -74,7 +80,9 @@ wsServer.on('request', function (request) {
       if (message.utf8Data === 'animation') {
         gameState.overlay_connected = true
         webSockets.animation = connection// store websocket for animation
-        webSockets.admin.send(JSON.stringify(gameState))
+        if (webSockets.admin) {
+          webSockets.admin.send(JSON.stringify(gameState))
+        }
         console.log('animation connected!')
       }
 
@@ -107,8 +115,9 @@ wsServer.on('request', function (request) {
         webSockets.char.send(JSON.stringify(gameState))
 
         // Send update to admin so we can see it connected visually
-        webSockets.admin.send(JSON.stringify(gameState))
-
+        if (webSockets.admin) {
+          webSockets.admin.send(JSON.stringify(gameState))
+        }
         console.log('Char select connected!')
       }
 
@@ -184,8 +193,19 @@ function chooseChars () {
   pools = []
   while (pools.length < 4) {
     let randomNumber = getRandomInt(0, (Object.keys(charPool).length) - 1)
-    if (pools.indexOf(randomNumber) > -1) continue
-    pools[pools.length] = randomNumber
+    let keys = Object.keys(charPool)
+
+    // Check to make sure we don't have two of the same character
+    let characterExists = false
+    for (let i = 0; i < pools.length; i++) {
+      if (pools[i] === keys[randomNumber]) {
+        characterExists = true
+      }
+    }
+    if (characterExists) continue
+
+    // add the character if it doesn't exist
+    pools[pools.length] = keys[randomNumber]
   }
 }
 
@@ -199,21 +219,21 @@ function startGame () {
   // reset entries and players
   entries = []
   for (let i = 0; i < 4; i++) {
-    gameState.players[i] = new Player(pools[i], charPool[pools[i]], i)
+    gameState.players[i] = new Player(pools[i], charPool[pools[i]].name, i)
   }
   console.log(gameState.players[0].fullName + ' ' + gameState.players[1].fullName + ' ' + gameState.players[2].fullName + ' ' + gameState.players[3].fullName)
   // make entry in games table of statsDB
-  statsDB.run('INSERT INTO Games (season, P1c, P2c, P3c, P4c) VALUES (' + gameState.season + ',"' + gameState.players[0].character + '","' + gameState.players[1].character + '","' + gameState.players[2].character + '","' + gameState.players[3].character + '")')
+  statsDB.run('INSERT INTO Games (season, player_one, player_two, player_three, player_four) VALUES (?,?,?,?,?)', gameState.season, gameState.players[0].character, gameState.players[1].character, gameState.players[2].character, gameState.players[3].character)
   // grab the GameID
-  statsDB.get('SELECT max(GameID) from Games', function (err, row) {
+  statsDB.get('SELECT max(id) from Games', function (err, row) {
     if (err) {
       // TODO Probably shouldn't just crash if there is an error
       throw (err)
     }
-    gameState.gameID = row['max(GameID)']
+    gameState.gameID = row['max(id)']
   })
   gameState.killID = 0
-  webSockets.animation.send(JSON.stringify(gameState))
+  webSockets.animation.send(JSON.stringify(gameState.players))
 
   gameState.generated = true
   gameState.canEnter = true
@@ -233,7 +253,7 @@ function chooseTarget (safe) {
     }
   }
   let target = getRandomInt(0, targets.length - 1)
-  console.log(target + ' ' + targets + 'targets.length = ' + targets.length + 'targets[target] = ' + targets[target])
+  console.log(target + ' ' + targets + ' targets.length = ' + targets.length + ' targets[target] = ' + targets[target])
   return targets[target]
 }
 
@@ -254,7 +274,7 @@ function killPlayer (safe) {
   console.log(gameState.players[safe].character + ' just killed ' + gameState.players[target].character + '. They now have ' + gameState.players[target].lives + ' lives left.')
   // log kill
   gameState.killID++
-  statsDB.run('INSERT INTO Kills (GameID,KillID,player,target) VALUES (?,?,?,?)', [gameState.gameID, gameState.killID, gameState.players[safe].character, gameState.players[target].character], function (err) {
+  statsDB.run('INSERT INTO Kills (game_id,kill_id,player,target) VALUES (?,?,?,?)', [gameState.gameID, gameState.killID, gameState.players[safe].character, gameState.players[target].character], function (err) {
     console.log(err)
   })
   // check to see if the game is over
@@ -417,7 +437,7 @@ function payout (winner, bonus, message, GID) {
   }
   // if (bonus>0){ message= message + "Bonus Sheckels earned: " + bonus}
   // record stats
-  statsDB.run('UPDATE Games SET P1s=?, P2s=?,P3s=?,P4s=?,prize=? WHERE GameID = ?',
+  statsDB.run('UPDATE Games SET player_one=?, player_two=?,player_three=?,player_four=?,prize=? WHERE id = ?',
     [gameState.players[0].kills + (gameState.players[0].lives * 2),
       gameState.players[1].kills + (gameState.players[1].lives * 2),
       gameState.players[2].kills + (gameState.players[2].lives * 2),
@@ -462,7 +482,7 @@ function findTeam (username) {
 // stores user in the DB if user isn't already in
 
 function storeUser (username) {
-  statsDB.get('SELECT * from Users where User = \'' + username + '\' and Season = ' + gameState.season, function (err, row) {
+  statsDB.get('SELECT * from Users where User = ? and Season = ?', username, gameState.season, function (err, row) {
     if (err) {
       // TODO Probably shouldn't just crash if there is an error
       throw (err)
@@ -471,7 +491,7 @@ function storeUser (username) {
       console.log('User found in table')
     } else {
       console.log('NOT FOUND! ENTER IT HERE')
-      statsDB.run('INSERT INTO Users VALUES (\'' + username + '\',0,0,0,0,' + gameState.season + ')')
+      statsDB.run('INSERT INTO Users (user, season) VALUES (?,?)', username, gameState.season)
     }
   })
   console.log('done checkin')
@@ -507,7 +527,7 @@ client.on('chat', function (channel, user, message, self) {
         gameState.players[randTeam].team.push(user['username'])
         client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
         storeUser(user['username'])
-        statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [gameState.gameID, user['username'], gameState.players[randTeam].character, 1, randTeam])
+        statsDB.run('INSERT INTO Entries (game_id, user, player, random, position) VALUES(?,?,?,?,?)', [gameState.gameID, user['username'], gameState.players[randTeam].character, 1, randTeam])
         webSockets.char.send(JSON.stringify(gameState.players))
         return
       } else {
@@ -517,19 +537,19 @@ client.on('chat', function (channel, user, message, self) {
       }
     }
     if (!gameState.canEnter) {
-      if (message.toLowerCase() === '!' + gameState.players[i].character || aliases[gameState.players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
+      if (message.toLowerCase() === '!' + gameState.players[i].character || charPool[gameState.players[i].character].aliases.indexOf(message.toLowerCase().substr(1)) !== -1) {
         if (entries.indexOf(user['username']) === -1) {
           client.action(config.channels[0], 'Entries are closed! !random to join a team')
           return
         }
       }
     }
-    if (message.toLowerCase() === '!' + gameState.players[i].character || aliases[gameState.players[i].character].indexOf(message.toLowerCase().substr(1)) !== -1) {
+    if (message.toLowerCase() === '!' + gameState.players[i].character || charPool[gameState.players[i].character].aliases.indexOf(message.toLowerCase().substr(1)) !== -1) {
       if (entries.indexOf(user['username']) === -1) {
         entries.push(user['username'])
         gameState.players[i].team.push(user['username'])
         client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[i].fullName + '!')
-        statsDB.run('INSERT INTO Entries values(?,?,?,?,?)', [gameState.gameID, user['username'], gameState.players[i].character, 0, i])
+        statsDB.run('INSERT INTO Entries (game_id, user, player, random, position) values(?,?,?,?,?)', [gameState.gameID, user['username'], gameState.players[i].character, 0, i])
         storeUser(user['username'])
         webSockets.char.send(JSON.stringify(gameState.players))
         return

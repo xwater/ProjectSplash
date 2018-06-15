@@ -4,6 +4,7 @@
   "description": "smashbot",
   "main": "splashbot.js",
   "dependencies": {
+    "axios": "^0.18.0",
     "express": "^4.16.3",
     "express-ws": "^3.0.0",
     "jsonfile": "^2.4.0",
@@ -22,6 +23,7 @@
   },
   "scripts": {
     "start": "node splashbot.js",
+    "dev": "eslint --ext .js, .html ./splashbot.js ./main --fix && node splashbot.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .js, .html ./splashbot.js ./main --fix"
   },
