@@ -482,7 +482,7 @@ function findTeam (username) {
 // stores user in the DB if user isn't already in
 
 function storeUser (username) {
-  statsDB.get('SELECT * from Users where User = ? and Season = ?', username, gameState.season, function (err, row) {
+  statsDB.get('SELECT * from Users where user = ? and season = ?', username, gameState.season, function (err, row) {
     if (err) {
       // TODO Probably shouldn't just crash if there is an error
       throw (err)
