@@ -7,13 +7,6 @@ body {
     background: url("../images/charscreen.png") no-repeat;
 }
 
-.charbox {
-    width: 150px;
-}
-
-.charbox img {
-    width: 180px;
-}
 
 .pbox {
     width: 340px;
@@ -22,17 +15,21 @@ body {
     position: relative;
 }
 
-#chargrid {
+#character-grid {
     position: absolute;
-    left: 170px;
+    height: 500px;
     top: 80px;
+    left: 45px;
+    width: 1395px;
     margin: auto;
-    width: 50%;
+    overflow: hidden;
 }
 
-#chargrid tbody tr td {
-    padding: 0;
+#character-grid img {
+    width: 120px;
+    padding: 1px;
 }
+
 
 #pgrid {
     position: absolute;
@@ -44,7 +41,7 @@ body {
 .charname {
     font-family: DFGothic-SU, serif;
     position: absolute;
-    font-size: 4vw;
+    font-size: 2vw;
     color: white;
     text-shadow: 10px -4px 0px rgba(0, 0, 0, 1);
     -webkit-text-stroke-width: 2px;

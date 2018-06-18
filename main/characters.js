@@ -20,6 +20,35 @@ const SONIC = 'sonic'
 const SQUIRTLE = 'squirtle'
 const YOSHI = 'yoshi'
 
+// unlockables
+const BOWSER = 'bowser'
+const BOWSER_JR = 'bowserjr'
+const CAPTAIN_OLIMAR = 'captainolimar'
+const CHARIZARD = 'charizard'
+const DIDDY = 'diddy'
+const DUCK_HUNT_DOG = 'duckhuntdog'
+const FALCO = 'falco'
+const GANON = 'ganon'
+const GRENINJA = 'greninja'
+const LINK_TOON = 'linktoon'
+const LITTLE_MAC = 'littlemac'
+const LUCARIO = 'lucario'
+const MARTH = 'marth'
+const MEGA_MAN = 'megaman'
+const META_KNIGHT = 'metaknight'
+const PAC_MAN = 'pacman'
+const PALUTENA = 'palutena'
+const PEACH = 'peach'
+const PIT = 'pit'
+const ROB = 'rob'
+const ROBIN = 'robin'
+const ROSALINA = 'rosalina'
+const SAMUS_ZERO = 'samuszero'
+const SHEIK = 'sheik'
+const VILLAGER = 'villager'
+const WARIO = 'wario'
+const ZELDA = 'zelda'
+
 let aliases = {}
 
 aliases[MARIO] = ['redluigi', 'charles martinet', 'charlesmartinet', 'the great gonzales', 'thegreatgonzales', 'marty-o', 'greatgonzales']
@@ -40,8 +69,62 @@ aliases[KING_DE_DE_DE] = ['deedeedee', 'deedede', 'kingdedede', 'king dedede']
 aliases[GAME_AND_WATCH] = ['gameandwatch', 'game&watch', 'mrgameandwatch', 'mrgame&watch', 'game and watch', 'game & watch', 'g&w', 'gaymanwatch']
 aliases[SQUIRTLE] = ['turtle', 'squirt turtle', 'moistSquirt', 'moistGold']
 aliases[MII] = ['xwater', 'miikii', 'miiki', 'miki', 'slickmik', 'quickmik', 'trickymiki', 'gunkill', 'clutchwater', 'stickymiki']
+aliases[PEACH] = []
+aliases[BOWSER] = []
+aliases[ROSALINA] = []
+aliases[BOWSER_JR] = []
+aliases[WARIO] = []
+aliases[DIDDY] = []
+aliases[LITTLE_MAC] = []
+aliases[ZELDA] = []
+aliases[SHEIK] = []
+aliases[GANON] = []
+aliases[LINK_TOON] = []
+aliases[SAMUS_ZERO] = []
+aliases[PIT] = []
+aliases[PALUTENA] = []
+aliases[MARTH] = []
+aliases[ROBIN] = []
+aliases[MEGA_MAN] = []
+aliases[PAC_MAN] = []
+aliases[CAPTAIN_OLIMAR] = []
+aliases[VILLAGER] = []
+aliases[ROB] = []
+aliases[GRENINJA] = []
+aliases[LUCARIO] = []
+aliases[CHARIZARD] = []
+aliases[FALCO] = []
+aliases[META_KNIGHT] = []
+aliases[DUCK_HUNT_DOG] = []
 
-let unlockableCharacters = []
+let unlockableCharacters = [
+  PEACH,
+  BOWSER,
+  ROSALINA,
+  BOWSER_JR,
+  DIDDY,
+  LITTLE_MAC,
+  ZELDA,
+  SHEIK,
+  GANON,
+  LINK_TOON,
+  SAMUS_ZERO,
+  PIT,
+  PALUTENA,
+  MARTH,
+  ROBIN,
+  DUCK_HUNT_DOG,
+  META_KNIGHT,
+  FALCO,
+  CHARIZARD,
+  LUCARIO,
+  GRENINJA,
+  ROB,
+  VILLAGER,
+  CAPTAIN_OLIMAR,
+  PAC_MAN,
+  MEGA_MAN
+]
 
 let defaultCharacters = [
   CAPTAIN_FALCON,
@@ -64,17 +147,22 @@ let defaultCharacters = [
   YOSHI
 ]
 
-function createCharacters () {
+function init () {
   let characters = {}
   for (let i = 0; i < defaultCharacters.length; i++) {
     characters[defaultCharacters[i]] = (new Character(i, defaultCharacters[i], true, aliases[defaultCharacters[i]]))
   }
-  db.initDefaultCharacters(characters)
+
+  for (let i = 0; i < unlockableCharacters.length; i++) {
+    characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], false, aliases[unlockableCharacters[i]]))
+  }
+
+  db.initCharacters(characters)
   return characters
 }
 
 module.exports = {
-  createCharacters,
+  init,
   CAPTAIN_FALCON,
   DK,
   FOX,
@@ -92,5 +180,32 @@ module.exports = {
   SAMUS,
   SONIC,
   SQUIRTLE,
-  YOSHI
+  YOSHI,
+
+  PEACH,
+  BOWSER,
+  ROSALINA,
+  BOWSER_JR,
+  DIDDY,
+  LITTLE_MAC,
+  ZELDA,
+  SHEIK,
+  GANON,
+  LINK_TOON,
+  SAMUS_ZERO,
+  PIT,
+  PALUTENA,
+  MARTH,
+  ROBIN,
+  DUCK_HUNT_DOG,
+  META_KNIGHT,
+  FALCO,
+  CHARIZARD,
+  LUCARIO,
+  GRENINJA,
+  ROB,
+  VILLAGER,
+  CAPTAIN_OLIMAR,
+  PAC_MAN,
+  MEGA_MAN
 }
