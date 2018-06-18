@@ -151,7 +151,7 @@ function playGif (DOMid, duration, path) {
 
 function generateOverlay (players) {
   for (let i = 0; i < players.length; i++) {
-    $('#p' + (i + 1) + 'icon').attr('src', './assets/icons/' + players[i].character + '.png')
+    $('#p' + (i + 1) + 'icon').attr('src', './assets/icons/live-portraits/' + players[i].character + '.png')
     lifeIcons(players[i].character, players[i].lives, (i + 1))
     $('#p' + (i + 1) + 'kills').text(players[i].kills)
     if (players[i].alive === false) {

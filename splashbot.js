@@ -81,6 +81,10 @@ wsServer.on('request', function (request) {
         if (webSockets.admin) {
           webSockets.admin.send(JSON.stringify(gameState))
         }
+
+        if (gameState.overlay_connected === true && gameState.players.length >= 4) {
+          webSockets.animation.send(JSON.stringify(gameState.players))
+        }
         console.log('animation connected!')
       }
 
@@ -105,6 +109,10 @@ wsServer.on('request', function (request) {
             gameState: gameState
           }))
         }
+
+        if (gameState.overlay_connected === true && gameState.players.length >= 4) {
+          webSockets.animation.send(JSON.stringify(gameState.players))
+        }
       }
 
       if (message.utf8Data === 'admin-close') {
@@ -117,6 +125,12 @@ wsServer.on('request', function (request) {
         webSockets.char = connection// store websocket for admin
         webSockets.char.send(JSON.stringify({
           type: 'init',
+          gameState: gameState
+        }))
+
+        /* send a "game start" message in [4] of char select screen */
+        webSockets.char.send(JSON.stringify({
+          type: 'gameStateUpdate',
           gameState: gameState
         }))
 

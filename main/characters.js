@@ -154,7 +154,7 @@ function init () {
   }
 
   for (let i = 0; i < unlockableCharacters.length; i++) {
-    characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], false, aliases[unlockableCharacters[i]]))
+    characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], true, aliases[unlockableCharacters[i]]))
   }
 
   db.initCharacters(characters)
