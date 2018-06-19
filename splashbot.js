@@ -584,14 +584,14 @@ client.on('chat', function (channel, user, message, self) {
       }
     }
     if (!gameState.canEnter) {
-      if (message.toLowerCase() === '!' + gameState.players[i].characte.namer || gameState.charPool[gameState.players[i].character.name].aliases.indexOf(message.toLowerCase().substr(1)) !== -1) {
+      if (message.toLowerCase() === '!' + gameState.players[i].characte.namer || gameState.charPool[gameState.players[i].character.name].aliases.includes(message.toLowerCase())) {
         if (gameState.entries.indexOf(user['username']) === -1) {
           client.action(config.channels[0], 'Entries are closed! !random to join a team')
           return
         }
       }
     }
-    if (message.toLowerCase() === '!' + gameState.players[i].character.name || gameState.charPool[gameState.players[i].character.name].aliases.indexOf(message.toLowerCase().substr(1)) !== -1) {
+    if (message.toLowerCase() === '!' + gameState.players[i].character.name || gameState.charPool[gameState.players[i].character.name].aliases.includes(message.toLowerCase())) {
       if (gameState.entries.indexOf(user['username']) === -1) {
         gameState.entries.push(user['username'])
         gameState.players[i].team.push(user['username'])
