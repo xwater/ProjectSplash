@@ -9,7 +9,13 @@ const db = new sqlite3.Database('./stats.db', sqlite3.OPEN_CREATE | sqlite3.OPEN
 
 db.serialize(() => {
   console.log('Initializing database')
-  db.run('CREATE TABLE IF NOT EXISTS `Entries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `game_id` INTEGER, `user` TEXT, `player` TEXT, `random` INTEGER, `position` INTEGER )', error => {
+  db.run('CREATE TABLE IF NOT EXISTS `Entries` (' +
+    '`id` INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+    '`game_id` INTEGER, ' +
+    '`user` TEXT, ' +
+    '`player` TEXT, ' +
+    '`random` INTEGER, ' +
+    '`position` INTEGER )', error => {
     if (error) {
       console.log(error.message)
       throw (error)
@@ -22,29 +28,44 @@ db.serialize(() => {
     '`player_2_name` TEXT, ' +
     '`player_3_name` TEXT, ' +
     '`player_4_name` TEXT, ' +
-    '`player_1_score` INTEGER, ' +
-    '`player_2_score` INTEGER, ' +
-    '`player_3_score` INTEGER, ' +
-    '`player_4_score` INTEGER, ' +
+    '`player_1_score` INTEGER DEFAULT 0, ' +
+    '`player_2_score` INTEGER DEFAULT 0, ' +
+    '`player_3_score` INTEGER DEFAULT 0, ' +
+    '`player_4_score` INTEGER DEFAULT 0, ' +
     '`prize` INTEGER )', error => {
     if (error) {
       console.log(error.message)
       throw (error)
     }
   })
-  db.run('CREATE TABLE IF NOT EXISTS `Kills` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `game_id` INTEGER, `kill_id` INTEGER, `player` INTEGER, `target` INTEGER )', error => {
+  db.run('CREATE TABLE IF NOT EXISTS `Kills` (' +
+    '`id` INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+    '`game_id` INTEGER, ' +
+    '`kill_id` INTEGER, ' +
+    '`player` INTEGER, ' +
+    '`target` INTEGER )', error => {
     if (error) {
       console.log(error.message)
       throw (error)
     }
   })
-  db.run('CREATE TABLE IF NOT EXISTS `Users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user` TEXT, `team_one_count` INTEGER DEFAULT 0, `team_two_count` INTEGER DEFAULT 0, `team_three_count` INTEGER DEFAULT 0, `team_four_count` INTEGER DEFAULT 0, `season` INTEGER )', error => {
+  db.run('CREATE TABLE IF NOT EXISTS `Users` (' +
+    '`id` INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+    '`user` TEXT, ' +
+    '`team_one_count` INTEGER DEFAULT 0, ' +
+    '`team_two_count` INTEGER DEFAULT 0, ' +
+    '`team_three_count` INTEGER DEFAULT 0, ' +
+    '`team_four_count` INTEGER DEFAULT 0, ' +
+    '`season` INTEGER )', error => {
     if (error) {
       console.log(error.message)
       throw (error)
     }
   })
-  db.run('CREATE TABLE IF NOT EXISTS `UnlockedCharacters` (`id` INTEGER PRIMARY KEY AUTOINCREMENT,`character_name` TEXT UNIQUE, `date_unlocked` TEXT)', error => {
+  db.run('CREATE TABLE IF NOT EXISTS `UnlockedCharacters` (' +
+    '`id` INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    '`character_name` TEXT UNIQUE, ' +
+    '`date_unlocked` TEXT)', error => {
     if (error) {
       console.log(error.message)
       throw (error)
@@ -77,22 +98,35 @@ exports.storeUser = (username, gameState, team) => {
       if (row) {
         console.log('User found in table updating stats')
         switch (team) {
+          case 0:
+            db.run('UPDATE USERS SET team_one_count = team_one_count + 1')
+            break
           case 1:
-            db.run('UPDATE USERS SET team_one_count = team_one_count + ?', team)
+            db.run('UPDATE USERS SET team_two_count = team_two_count + 1')
             break
           case 2:
-            db.run('UPDATE USERS SET team_two_count = team_two_count + ?', team)
+            db.run('UPDATE USERS SET team_three_count = team_three_count + 1')
             break
           case 3:
-            db.run('UPDATE USERS SET team_three_count = team_three_count + ?', team)
-            break
-          case 4:
-            db.run('UPDATE USERS SET team_three_count = team_three_count + ?', team)
+            db.run('UPDATE USERS SET team_three_count = team_three_count + 1')
             break
         }
       } else {
         console.log('NOT FOUND! ENTER IT HERE')
-        db.run('INSERT INTO Users (user, season) VALUES (?,?)', username, gameState.season)
+        switch (team) {
+          case 0:
+            db.run('INSERT INTO Users (user, season, team_one_count) VALUES (?,?,?)', username, gameState.season, 1)
+            break
+          case 1:
+            db.run('INSERT INTO Users (user, season, team_two_count) VALUES (?,?,?)', username, gameState.season, 1)
+            break
+          case 2:
+            db.run('INSERT INTO Users (user, season, team_three_count) VALUES (?,?,?)', username, gameState.season, 1)
+            break
+          case 3:
+            db.run('INSERT INTO Users (user, season, team_four_count) VALUES (?,?,?)', username, gameState.season, 1)
+            break
+        }
       }
     })
   })
