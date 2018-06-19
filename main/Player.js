@@ -11,5 +11,7 @@ module.exports =
       this.team = []
       this.fullName = fs.readFileSync('./assets/names/' + this.character.name + '.txt', 'utf8')
       this.pos = pos
+      this.isWinner = false
+      this.score = 0
     }
   }

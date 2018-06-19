@@ -187,6 +187,34 @@ exports.addEntry = (gameState, username, randTeam) => {
   })
 }
 
+exports.getUnlockedCharacters = () => {
+  return new Promise(resolve => {
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION')
+      db.run('END')
+      db.all('SELECT character_name FROM UnlockedCharacters WHERE date_unlocked IS NOT NULL', (error, rows) => {
+        if (error) {
+          throw error
+        }
+        resolve(rows)
+      })
+    })
+  })
+}
+
+exports.unlockCharacter = (name, unlocked = true) => {
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION')
+    if (unlocked) {
+      let timeStamp = createTimestamp()
+      db.run('INSERT OR IGNORE INTO UnlockedCharacters(character_name, date_unlocked) VALUES(?, ?)', name, timeStamp)
+    } else {
+      db.run('INSERT OR IGNORE INTO UnlockedCharacters(character_name, date_unlocked) VALUES(?, ?)', name, null)
+    }
+    db.run('END')
+  })
+}
+
 function createTimestamp () {
   const date = new Date()
   const year = date.getFullYear()

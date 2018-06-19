@@ -38,7 +38,9 @@ const webSockets = {
 
 // generate character pools
 let characters = require('./main/characters')
-gameState.charPool = characters.init()
+characters.init().then(characters => {
+  gameState.charPool = characters
+})
 
 let suddenDeath = [
   'Broke Man',
@@ -166,6 +168,7 @@ wsServer.on('request', function (request) {
           gameState.error = 'Character selection is not connected'
           webSockets.admin.send(JSON.stringify(gameState))
         } else {
+          resetState()
           gameState.generated = true
           gameState.error = null
           webSockets.admin.send(JSON.stringify(gameState))
@@ -235,8 +238,11 @@ function chooseRoster () {
     }
     if (characterExists) continue
 
+    // make sure the character is unlocked
+    if (gameState.charPool[keys[randomNumber]].unlocked === false) continue
+
     // add the character if it doesn't exist
-    gameState.roster[gameState.roster.length] = keys[randomNumber]
+    gameState.roster.push(keys[randomNumber])
   }
 }
 
@@ -245,7 +251,7 @@ function getRandomInt (min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-async function startGame () {
+function startGame () {
   chooseRoster()
   // reset entries and players
   gameState.entries = []
@@ -258,22 +264,23 @@ async function startGame () {
   db.createNewGame(gameState)
 
   // grab the GameID
-  gameState.gameID = await db.getGameId()
-  gameState.killID = 0
 
-  webSockets.animation.send(JSON.stringify({
-    type: 'gameStateUpdate',
-    gameState: gameState
-  }))
+  db.getGameId().then((gameId) => {
+    gameState.gameID = gameId
+    gameState.generated = true
+    gameState.canEnter = true
 
-  gameState.generated = true
-  gameState.canEnter = true
+    webSockets.animation.send(JSON.stringify({
+      type: 'gameStateUpdate',
+      gameState: gameState
+    }))
 
-  /* send a "game start" message in [4] of char select screen */
-  webSockets.char.send(JSON.stringify({
-    type: 'gameStateUpdate',
-    gameState: gameState
-  }))
+    /* send a "game start" message in [4] of char select screen */
+    webSockets.char.send(JSON.stringify({
+      type: 'gameStateUpdate',
+      gameState: gameState
+    }))
+  })
 }
 
 function chooseTarget (safe) {
@@ -309,9 +316,19 @@ function killPlayer (safe) {
   // log kill
   gameState.killID++
   db.addKill(gameState, safe, target)
-  // check to see if the game is over
+  gameState.killTargetIndex = target
+  gameState.safeTargetIndex = safe
+
+  webSockets.animation.send(JSON.stringify({
+    type: 'killPlayer',
+    gameState: gameState
+  }))
+}
+
+function isGameOver () {
+// check to see if the game is over
   let done = isOver()
-  // if there is a winner!
+// if there is a winner!
 
   if (done === true) {
     let winners = pickWinners()
@@ -319,7 +336,9 @@ function killPlayer (safe) {
       // unlock = Unlockables(winners[0])
       payout(winners[0], 0, '', gameState.gameID)
       winChar = winners[0]['character']
-    } else if (winners.length === 2) {
+      gameState.winningTargetIndex = winChar
+      endGame()
+    } else if (winners.length >= 2) {
       // sudden death here
       gameState.suddenDeath = getRandomInt(0, 3)
       client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
@@ -328,30 +347,16 @@ function killPlayer (safe) {
       webSockets.admin.send(JSON.stringify(winners))
     } else {
       // payout all
+      // todo not sure how we would get here
       for (let i = 0; i < 4; i++) {
         payout(gameState.players[i], 0, '', gameState.gameID)
       }
     }
   }
-
-  gameState.killTargetIndex = target
-  gameState.safeTargetIndex = safe
-
-  if (winChar) {
-    // If we have a winner
-    gameState.winningTargetIndex = winChar
-    endGame()
-  } else {
-    // other wise just kill them off
-    webSockets.animation.send(JSON.stringify({
-      type: 'killPlayer',
-      gameState: gameState
-    }))
-  }
-
-  // if (unlock) { msg[7] = unlock }
-  // console.log(JSON.stringify(msg))
 }
+
+// if (unlock) { msg[7] = unlock }
+// console.log(JSON.stringify(msg))
 
 function suddenDeathWinner (winner) {
   // let unlock = Unlockables(players[winner])
@@ -413,20 +418,17 @@ function resetState () {
 }
 
 function pickWinners () {
-  let scores = []
   let topScore = 0
-  // calculate top score and each player's score
+  // calculate each player's score
   for (let i = 0; i < 4; i++) {
-    scores[i] = gameState.players[i].kills + (gameState.players[i].lives * 2)
-    if (scores[i] > topScore) {
-      topScore = scores[i]
-    }
+    gameState.players[i].score = gameState.players[i].kills + (gameState.players[i].lives * 2)
   }
   // put all players with top score into winner array, return.
   let winners = []
-  for (let j = 0; j < 4; j++) {
-    if (scores[j] === topScore) {
-      winners.push(gameState.players[j])
+  for (let i = 0; i < 4; i++) {
+    if (gameState.players[i].score >= topScore) {
+      topScore = gameState.players[i].score
+      winners.push(gameState.players[i])
     }
   }
 
@@ -440,11 +442,7 @@ function isOver () {
       aliveCount++
     }
   }
-  if (aliveCount === 1) {
-    gameState.generated = false
-    return true
-  }
-  return false
+  return aliveCount === 1
 }
 
 // function Unlockables (winner) {

@@ -92,7 +92,6 @@ $(function () {
     if (data.overlay_connected === true && data.char_connected === true && data.admin_connected === true) {
       showStatusMessage('connection ready!')
     }
-
   }
 
   function hidePlayers (append) {

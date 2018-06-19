@@ -151,17 +151,28 @@ let defaultCharacters = [
 ]
 
 function init () {
-  let characters = {}
-  for (let i = 0; i < defaultCharacters.length; i++) {
-    characters[defaultCharacters[i]] = (new Character(i, defaultCharacters[i], true, aliases[defaultCharacters[i]]))
-  }
+  return new Promise(resolve => {
+    let characters = {}
+    for (let i = 0; i < defaultCharacters.length; i++) {
+      characters[defaultCharacters[i]] = (new Character(i, defaultCharacters[i], true, aliases[defaultCharacters[i]]))
+    }
 
-  for (let i = 0; i < unlockableCharacters.length; i++) {
-    characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], false, aliases[unlockableCharacters[i]]))
-  }
+    for (let i = 0; i < unlockableCharacters.length; i++) {
+      characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], false, aliases[unlockableCharacters[i]]))
+    }
 
-  db.initCharacters(characters)
-  return characters
+    db.initCharacters(characters)
+    db.getUnlockedCharacters().then(unlockedCharacters => {
+      for (let character of unlockedCharacters) {
+        for (let i = 0; i < characters.length; i++) {
+          if (characters[i].name === character.character_name) {
+            characters[i].unlocked = true
+          }
+        }
+      }
+      resolve(characters)
+    })
+  })
 }
 
 module.exports = {
