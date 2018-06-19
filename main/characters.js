@@ -1,52 +1,52 @@
 const Character = require('./Character')
 const db = require('./database')
 
+const BOWSER = 'bowser'
+const BOWSER_JR = 'bowserjr'
 const CAPTAIN_FALCON = 'falcon'
+const CAPTAIN_OLIMAR = 'captainolimar'
+const CHARIZARD = 'charizard'
+const DIDDY = 'diddy'
 const DK = 'dk'
+const DUCK_HUNT_DOG = 'duckhuntdog'
+const FALCO = 'falco'
 const FOX = 'fox'
 const GAME_AND_WATCH = 'gaw'
+const GANON = 'ganon'
+const GRENINJA = 'greninja'
 const IKE = 'ike'
 const JIGGILY_PUFF = 'puff'
 const KING_DE_DE_DE = 'dedede'
 const KIRBY = 'kirby'
 const LINK = 'link'
-const LUIGI = 'luigi'
-const MARIO = 'mario'
-const MII = 'mii'
-const NESS = 'ness'
-const PIKACHU = 'pika'
-const SAMUS = 'samus'
-const SONIC = 'sonic'
-const SQUIRTLE = 'squirtle'
-const YOSHI = 'yoshi'
-
-// unlockables
-const BOWSER = 'bowser'
-const BOWSER_JR = 'bowserjr'
-const CAPTAIN_OLIMAR = 'captainolimar'
-const CHARIZARD = 'charizard'
-const DIDDY = 'diddy'
-const DUCK_HUNT_DOG = 'duckhuntdog'
-const FALCO = 'falco'
-const GANON = 'ganon'
-const GRENINJA = 'greninja'
 const LINK_TOON = 'linktoon'
 const LITTLE_MAC = 'littlemac'
 const LUCARIO = 'lucario'
+const LUCINA = 'lucina'
+const LUIGI = 'luigi'
+const MARIO = 'mario'
 const MARTH = 'marth'
 const MEGA_MAN = 'megaman'
 const META_KNIGHT = 'metaknight'
+const MII = 'mii'
+const NESS = 'ness'
 const PAC_MAN = 'pacman'
 const PALUTENA = 'palutena'
 const PEACH = 'peach'
+const PIKACHU = 'pika'
 const PIT = 'pit'
 const ROB = 'rob'
 const ROBIN = 'robin'
 const ROSALINA = 'rosalina'
+const SAMUS = 'samus'
 const SAMUS_ZERO = 'samuszero'
 const SHEIK = 'sheik'
+const SONIC = 'sonic'
+const SQUIRTLE = 'squirtle'
 const VILLAGER = 'villager'
 const WARIO = 'wario'
+const WII_FIT_TRAINER = 'wiifittrainer'
+const YOSHI = 'yoshi'
 const ZELDA = 'zelda'
 
 let aliases = {}
@@ -70,6 +70,7 @@ aliases[GAME_AND_WATCH] = ['gameandwatch', 'game&watch', 'mrgameandwatch', 'mrga
 aliases[SQUIRTLE] = ['turtle', 'squirt turtle', 'moistSquirt', 'moistGold']
 aliases[MII] = ['xwater', 'miikii', 'miiki', 'miki', 'slickmik', 'quickmik', 'trickymiki', 'gunkill', 'clutchwater', 'stickymiki']
 aliases[PEACH] = []
+aliases[LUCINA] = []
 aliases[BOWSER] = []
 aliases[ROSALINA] = []
 aliases[BOWSER_JR] = []
@@ -98,35 +99,36 @@ aliases[META_KNIGHT] = []
 aliases[DUCK_HUNT_DOG] = []
 
 let unlockableCharacters = [
-  PEACH,
-  BOWSER,
   ROSALINA,
-  BOWSER_JR,
-  DIDDY,
-  LITTLE_MAC,
-  ZELDA,
   SHEIK,
-  GANON,
-  LINK_TOON,
-  SAMUS_ZERO,
-  PIT,
   PALUTENA,
   MARTH,
-  ROBIN,
-  DUCK_HUNT_DOG,
-  META_KNIGHT,
-  FALCO,
-  CHARIZARD,
-  LUCARIO,
-  GRENINJA,
-  ROB,
-  VILLAGER,
-  CAPTAIN_OLIMAR,
-  PAC_MAN,
-  MEGA_MAN
+  LUCINA
+  // BOWSER,
+  // BOWSER_JR,
+  // DIDDY,
+  // LITTLE_MAC,
+  // GANON,
+  // LINK_TOON,
+  // SAMUS_ZERO,
+  // ROBIN,
+  // DUCK_HUNT_DOG,
+  // META_KNIGHT,
+  // FALCO,
+  // CHARIZARD,
+  // LUCARIO,
+  // GRENINJA,
+  // ROB,
+  // VILLAGER,
+  // CAPTAIN_OLIMAR,
+  // PAC_MAN,
+  // MEGA_MAN
 ]
 
 let defaultCharacters = [
+  WII_FIT_TRAINER,
+  PEACH,
+  ZELDA,
   CAPTAIN_FALCON,
   DK,
   FOX,
@@ -144,7 +146,8 @@ let defaultCharacters = [
   SAMUS,
   SONIC,
   SQUIRTLE,
-  YOSHI
+  YOSHI,
+  PIT
 ]
 
 function init () {
@@ -154,7 +157,7 @@ function init () {
   }
 
   for (let i = 0; i < unlockableCharacters.length; i++) {
-    characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], true, aliases[unlockableCharacters[i]]))
+    characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], false, aliases[unlockableCharacters[i]]))
   }
 
   db.initCharacters(characters)
@@ -181,7 +184,6 @@ module.exports = {
   SONIC,
   SQUIRTLE,
   YOSHI,
-
   PEACH,
   BOWSER,
   ROSALINA,

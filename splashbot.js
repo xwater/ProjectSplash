@@ -20,6 +20,9 @@ const gameState = {
   killID: -1,
   season: 1,
   suddenDeath: -1,
+  safeTargetIndex: -1,
+  winningTargetIndex: -1,
+  killTargetIndex: -1,
   canEnter: false,
   players: [],
   roster: [],
@@ -83,7 +86,10 @@ wsServer.on('request', function (request) {
         }
 
         if (gameState.overlay_connected === true && gameState.players.length >= 4) {
-          webSockets.animation.send(JSON.stringify(gameState.players))
+          webSockets.animation.send(JSON.stringify({
+            type: 'gameStateUpdate',
+            gameState: gameState
+          }))
         }
         console.log('animation connected!')
       }
@@ -111,7 +117,10 @@ wsServer.on('request', function (request) {
         }
 
         if (gameState.overlay_connected === true && gameState.players.length >= 4) {
-          webSockets.animation.send(JSON.stringify(gameState.players))
+          webSockets.animation.send(JSON.stringify({
+            type: 'gameStateUpdate',
+            gameState: gameState
+          }))
         }
       }
 
@@ -241,7 +250,7 @@ function startGame () {
   // reset entries and players
   gameState.entries = []
   for (let i = 0; i < 4; i++) {
-    gameState.players[i] = new Player(gameState.roster[i], gameState.charPool[gameState.roster[i]].name, i)
+    gameState.players[i] = new Player(gameState.roster[i], gameState.charPool[gameState.roster[i]], i)
   }
   console.log(gameState.players[0].fullName + ' ' + gameState.players[1].fullName + ' ' + gameState.players[2].fullName + ' ' + gameState.players[3].fullName)
 
@@ -252,7 +261,10 @@ function startGame () {
   gameState.gameID = db.getGameId()
 
   gameState.killID = 0
-  webSockets.animation.send(JSON.stringify(gameState.players))
+  webSockets.animation.send(JSON.stringify({
+    type: 'gameStateUpdate',
+    gameState: gameState
+  }))
 
   gameState.generated = true
   gameState.canEnter = true
@@ -293,7 +305,7 @@ function killPlayer (safe) {
   }
   // give the safe player the kill
   gameState.players[safe].kills++
-  console.log(gameState.players[safe].character + ' just killed ' + gameState.players[target].character + '. They now have ' + gameState.players[target].lives + ' lives left.')
+  console.log(gameState.players[safe].character.name + ' just killed ' + gameState.players[target].character.name + '. They now have ' + gameState.players[target].lives + ' lives left.')
   // log kill
   gameState.killID++
   db.addKill(gameState, safe, target)
@@ -304,7 +316,6 @@ function killPlayer (safe) {
   if (done === true) {
     let winners = pickWinners()
     if (winners.length === 1) {
-      // TODO Moved Characters to their own JS file so we can't really write to this file we should probably load from a DB rather than a text file
       // unlock = Unlockables(winners[0])
       payout(winners[0], 0, '', gameState.gameID)
       winChar = winners[0]['character']
@@ -321,50 +332,78 @@ function killPlayer (safe) {
         payout(gameState.players[i], 0, '', gameState.gameID)
       }
     }
-    endGame()
   }
-  // build message for animation
-  let msg = JSON.parse(JSON.stringify(gameState.players))
-  msg[4] = safe
-  msg[5] = target
-  if (winChar) { msg[6] = winChar }
+
+  gameState.killTargetIndex = target
+  gameState.safeTargetIndex = safe
+
+  if (winChar) {
+    // If we have a winner
+    gameState.winningTargetIndex = winChar
+    endGame()
+  } else {
+    // other wise just kill them off
+    webSockets.animation.send(JSON.stringify({
+      type: 'killPlayer',
+      gameState: gameState
+    }))
+  }
+
   // if (unlock) { msg[7] = unlock }
-  console.log(JSON.stringify(msg))
-  webSockets.animation.send(JSON.stringify(msg))
+  // console.log(JSON.stringify(msg))
 }
 
 function suddenDeathWinner (winner) {
   // let unlock = Unlockables(players[winner])
   payout(gameState.players[winner], (gameState.players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', gameState.gameID)
   console.log('ALERT!!@#!#!@#@!' + JSON.stringify(gameState.players[winner].character))
-  let msg = JSON.parse(JSON.stringify(gameState.players))
   let winners = pickWinners()
 
-  msg[4] = winner
+  gameState.players[4] = winner
+
   // grab both winners again, put loser position into msg[5]
-  if (winners[0].pos === winner) { msg[5] = winners[1].pos } else { msg[5] = winners[0].pos }
-  msg[6] = gameState.players[winner].character
+  if (winners[0].pos === winner) {
+    gameState.players[5] = winners[1].pos
+  } else {
+    gameState.players[5] = winners[0].pos
+  }
+
+  gameState.players[6] = gameState.players[winner].character
   // if (unlock) { msg[7] = unlock }
-  webSockets.animation.send(JSON.stringify(msg))
+  webSockets.animation.send(JSON.stringify({
+    type: 'killPlayer',
+    gameState: gameState
+  }))
   endGame()
 }
 
 function endGame () {
+
+  webSockets.animation.send(JSON.stringify({
+    type: 'gameEnd',
+    gameState: gameState
+  }))
+
   // Update the state and send it to the client
   resetState()
 
   webSockets.admin.send(JSON.stringify(gameState))
   // Update the character selection screen
-  webSockets.char.send({
+  webSockets.char.send(JSON.stringify({
     type: 'gameEnd',
     gameState: gameState
-  })
+  }))
+
+
 }
 
 function resetState () {
   gameState.suddenDeath = -1
   gameState.gameID = -1
   gameState.killID = -1
+  gameState.safeTargetIndex = -1
+  gameState.killTargetIndex = -1
+  gameState.winningTargetIndex = -1
   gameState.in_progress = false
   gameState.generated = false
   gameState.canEnter = false
@@ -432,6 +471,14 @@ function isOver () {
 //       return unlockChar('mii')
 //     }
 //   }
+
+// zelda win  =shiek
+// samus win = zero suit
+// game and watch win = wii fit trainer
+// 3 mario charcaters = rosalina
+// > 5 points = lucian
+// ike
+
 // }
 
 // function unlockChar (unlock) {

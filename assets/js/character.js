@@ -30,7 +30,7 @@ $(function () {
         let game = event.gameState
         for (let i = 0; i < 4; i++) {
           $('#p' + (i + 1) + 'name').text(game.players[i]['fullName'])
-          $('#p' + (i + 1) + 'pic').attr('src', './assets/icons/portraits/' + game.players[i]['character'] + '/' + game.players[i]['character'] + getRandomInt(1, 8) + '.png')
+          $('#p' + (i + 1) + 'pic').attr('src', './assets/icons/portraits/' + game.players[i].character.name + '/' + game.players[i].character.name + getRandomInt(1, 8) + '.png')
           $('#p' + (i + 1) + 'team').text('0')
         }
         break

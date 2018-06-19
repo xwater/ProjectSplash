@@ -9,7 +9,7 @@ module.exports =
       this.kills = 0
       this.alive = true
       this.team = []
-      this.fullName = fs.readFileSync('./assets/names/' + character + '.txt', 'utf8')
+      this.fullName = fs.readFileSync('./assets/names/' + this.character.name + '.txt', 'utf8')
       this.pos = pos
     }
   }
