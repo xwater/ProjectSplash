@@ -245,7 +245,7 @@ function getRandomInt (min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function startGame () {
+async function startGame () {
   chooseRoster()
   // reset entries and players
   gameState.entries = []
@@ -258,9 +258,9 @@ function startGame () {
   db.createNewGame(gameState)
 
   // grab the GameID
-  gameState.gameID = db.getGameId()
-
+  gameState.gameID = await db.getGameId()
   gameState.killID = 0
+
   webSockets.animation.send(JSON.stringify({
     type: 'gameStateUpdate',
     gameState: gameState
@@ -378,7 +378,6 @@ function suddenDeathWinner (winner) {
 }
 
 function endGame () {
-
   webSockets.animation.send(JSON.stringify({
     type: 'gameEnd',
     gameState: gameState
@@ -393,8 +392,6 @@ function endGame () {
     type: 'gameEnd',
     gameState: gameState
   }))
-
-
 }
 
 function resetState () {
@@ -507,7 +504,7 @@ function payout (winner, bonus, message, GID) {
     }
   }
   // if (bonus>0){ message= message + "Bonus Sheckels earned: " + bonus}
-  db.recordStats(gameState, pay, GID)
+  db.recordStats(gameState, pay, gameState.gameID)
   console.log(winner.team)
   if (winner.team.length > 0) {
     client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
@@ -573,7 +570,7 @@ client.on('chat', function (channel, user, message, self) {
         let randTeam = getRandomInt(0, 3)
         gameState.players[randTeam].team.push(user['username'])
         client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
-        db.storeUser(user['username'])
+        db.storeUser(user['username'], gameState, randTeam)
         db.addEntry(gameState, user['username'], randTeam)
         webSockets.char.send(JSON.stringify({
           type: 'players',
@@ -599,7 +596,7 @@ client.on('chat', function (channel, user, message, self) {
         gameState.entries.push(user['username'])
         gameState.players[i].team.push(user['username'])
         client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[i].fullName + '!')
-        db.storeUser(user['username'])
+        db.storeUser(user['username'], gameState, i)
         db.addEntry(gameState, user['username'], i)
         webSockets.char.send(JSON.stringify({
           type: 'players',

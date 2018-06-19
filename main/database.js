@@ -15,7 +15,18 @@ db.serialize(() => {
       throw (error)
     }
   })
-  db.run('CREATE TABLE IF NOT EXISTS `Games` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `season` INTEGER, `player_one` TEXT, `player_two` TEXT, `player_three` TEXT, `player_four` TEXT, `prize` INTEGER )', error => {
+  db.run('CREATE TABLE IF NOT EXISTS `Games` (' +
+    '`id` INTEGER PRIMARY KEY AUTOINCREMENT,' +
+    ' `season` INTEGER, ' +
+    '`player_1_name` TEXT, ' +
+    '`player_2_name` TEXT, ' +
+    '`player_3_name` TEXT, ' +
+    '`player_4_name` TEXT, ' +
+    '`player_1_score` INTEGER, ' +
+    '`player_2_score` INTEGER, ' +
+    '`player_3_score` INTEGER, ' +
+    '`player_4_score` INTEGER, ' +
+    '`prize` INTEGER )', error => {
     if (error) {
       console.log(error.message)
       throw (error)
@@ -27,7 +38,7 @@ db.serialize(() => {
       throw (error)
     }
   })
-  db.run('CREATE TABLE IF NOT EXISTS `Users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user` TEXT, `first` INTEGER DEFAULT 0, `second` INTEGER DEFAULT 0, `third` INTEGER DEFAULT 0, `fourth` INTEGER DEFAULT 0, `season` INTEGER )', error => {
+  db.run('CREATE TABLE IF NOT EXISTS `Users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user` TEXT, `team_one_count` INTEGER DEFAULT 0, `team_two_count` INTEGER DEFAULT 0, `team_three_count` INTEGER DEFAULT 0, `team_four_count` INTEGER DEFAULT 0, `season` INTEGER )', error => {
     if (error) {
       console.log(error.message)
       throw (error)
@@ -44,7 +55,7 @@ db.serialize(() => {
 
 // record the game stats
 exports.recordStats = (gameState, pay, gameId) => {
-  db.run('UPDATE Games SET player_one=?, player_two=?,player_three=?,player_four=?,prize=? WHERE id = ?',
+  db.run('UPDATE Games SET player_1_score=?, player_2_score=?,player_3_score=?,player_4_score=?,prize=? WHERE id = ?',
     [
       gameState.players[0].kills + (gameState.players[0].lives * 2),
       gameState.players[1].kills + (gameState.players[1].lives * 2),
@@ -56,7 +67,7 @@ exports.recordStats = (gameState, pay, gameId) => {
 }
 
 // stores user in the DB if user isn't already in
-exports.storeUser = (username, gameState) => {
+exports.storeUser = (username, gameState, team) => {
   db.serialize(() => {
     db.get('SELECT * from Users where user = ? and season = ?', username, gameState.season, function (err, row) {
       if (err) {
@@ -64,7 +75,21 @@ exports.storeUser = (username, gameState) => {
         throw (err)
       }
       if (row) {
-        console.log('User found in table')
+        console.log('User found in table updating stats')
+        switch (team) {
+          case 1:
+            db.run('UPDATE USERS SET team_one_count = team_one_count + ?', team)
+            break
+          case 2:
+            db.run('UPDATE USERS SET team_two_count = team_two_count + ?', team)
+            break
+          case 3:
+            db.run('UPDATE USERS SET team_three_count = team_three_count + ?', team)
+            break
+          case 4:
+            db.run('UPDATE USERS SET team_three_count = team_three_count + ?', team)
+            break
+        }
       } else {
         console.log('NOT FOUND! ENTER IT HERE')
         db.run('INSERT INTO Users (user, season) VALUES (?,?)', username, gameState.season)
@@ -76,24 +101,26 @@ exports.storeUser = (username, gameState) => {
 
 exports.createNewGame = (gameState) => {
   db.serialize(() => {
-    db.run('INSERT INTO Games (season, player_one, player_two, player_three, player_four) VALUES (?,?,?,?,?)',
+    db.run('INSERT INTO Games (season, player_1_name, player_2_name, player_3_name, player_4_name) VALUES (?,?,?,?,?)',
       [
         gameState.season,
-        gameState.players[0].character,
-        gameState.players[1].character,
-        gameState.players[2].character,
-        gameState.players[3].character
+        gameState.players[0].character.name,
+        gameState.players[1].character.name,
+        gameState.players[2].character.name,
+        gameState.players[3].character.name
       ])
   })
 }
 
-exports.getGameId = () => {
-  db.serialize(() => {
-    db.get('SELECT max(id) from Games', function (err, row) {
-      if (err) {
-        throw (err)
-      }
-      return row['max(id)']
+exports.getGameId = async () => {
+  return new Promise(resolve => {
+    db.serialize(() => {
+      db.get('SELECT max(id) from Games', function (err, row) {
+        if (err) {
+          throw (err)
+        }
+        resolve(row['max(id)'])
+      })
     })
   })
 }
@@ -104,8 +131,8 @@ exports.addKill = (gameState, safe, target) => {
       [
         gameState.gameID,
         gameState.killID,
-        gameState.players[safe].character,
-        gameState.players[target].character
+        gameState.players[safe].character.name,
+        gameState.players[target].character.name
       ],
       function (err) {
         console.log(err)
@@ -119,7 +146,7 @@ exports.addEntry = (gameState, username, randTeam) => {
       [
         gameState.gameID,
         username,
-        gameState.players[randTeam].character,
+        gameState.players[randTeam].character.name,
         1,
         randTeam
       ])
