@@ -6,7 +6,15 @@ $(function () {
   let generateBtn = $('#generate')
   let admin = $('#admin')
 
+  let p1 = $('#p1')
+  let p2 = $('#p2')
+  let p3 = $('#p3')
+  let p4 = $('#p4')
+  let duration = 8000
+
   const connection = new WebSocket('ws://127.0.0.1:3000')
+
+  registerButtonClicks(connection)
 
   window.onbeforeunload = function () {
     connection.send('admin-close')
@@ -15,6 +23,7 @@ $(function () {
   hidePlayers('')
   hidePlayers('sd')
   startBtn.hide()
+
   connection.onopen = function () {
     hideErrors()
     // connection is opened and ready to use
@@ -56,13 +65,10 @@ $(function () {
       hidePlayers('')
     }
 
-    if (typeof data[1] !== 'undefined' && typeof data[2] !== 'undefined') {
-      // meant for sudden death scenario
-      if (data[2] !== 'SD') { return }
-      console.log('doing the thing')
+    if (data.type === 'suddenDeath') {
       hidePlayers('')
-      $('#p' + (data[0].pos + 1)).show()
-      $('#p' + (data[1].pos + 1)).show()
+      $('#p' + (data.winners[0].pos + 1)).show() // +1 because the divs are not zero indexed
+      $('#p' + (data.winners[1].pos + 1)).show()// +1 because the divs are not zero indexed
     }
 
     if (data === 'The animation is not connected') {
@@ -94,6 +100,27 @@ $(function () {
     }
   }
 
+  function registerButtonClicks () {
+    p1.click(function () {
+      connection.send('1')
+    })
+    p2.click(function () {
+      connection.send('2')
+    })
+    p3.click(function () {
+      connection.send('3')
+    })
+    p4.click(function () {
+      connection.send('4')
+    })
+    startBtn.click(function () {
+      connection.send('start')
+    })
+    generateBtn.click(function () {
+      connection.send('generate')
+    })
+  }
+
   function hidePlayers (append) {
     $('#p1' + append).hide()
     $('#p2' + append).hide()
@@ -108,52 +135,33 @@ $(function () {
     $('#p4' + append).show()
   }
 
-  $('#p1').click(function () {
-    connection.send('1')
-  })
-  $('#p2').click(function () {
-    connection.send('2')
-  })
-  $('#p3').click(function () {
-    connection.send('3')
-  })
-  $('#p4').click(function () {
-    connection.send('4')
-  })
-  startBtn.click(function () {
-    connection.send('start')
-  })
-  generateBtn.click(function () {
-    connection.send('generate')
-  })
+  function hideErrors () {
+    let errors = $('#error')
+    errors.hide()
+    errors.text('')
+  }
+
+  function showErrors (errorMsg) {
+    hideStatusMessage()
+    let errors = $('#error')
+    errors.text(errorMsg)
+    errors.show()
+  }
+
+  function showStatusMessage (msg) {
+    hideErrors()
+    let counter = $('#counter')
+    counter.text(msg)
+    counter.show()
+  }
+
+  function hideStatusMessage () {
+    let counter = $('#counter')
+    counter.hide()
+    counter.text('')
+  }
+
+  function updateState (state) {
+    $('#state').text(state)
+  }
 })
-
-function hideErrors () {
-  let errors = $('#error')
-  errors.hide()
-  errors.text('')
-}
-
-function showErrors (errorMsg) {
-  hideStatusMessage()
-  let errors = $('#error')
-  errors.text(errorMsg)
-  errors.show()
-}
-
-function showStatusMessage (msg) {
-  hideErrors()
-  let counter = $('#counter')
-  counter.text(msg)
-  counter.show()
-}
-
-function hideStatusMessage () {
-  let counter = $('#counter')
-  counter.hide()
-  counter.text('')
-}
-
-function updateState (state) {
-  $('#state').text(state)
-}

@@ -88,12 +88,9 @@ wsServer.on('request', function (request) {
         }
 
         if (gameState.overlay_connected === true && gameState.players.length >= 4) {
-          webSockets.animation.send(JSON.stringify({
-            type: 'gameStateUpdate',
-            gameState: gameState
-          }))
+          sendAnimationGameStateUpdate()
         }
-        console.log('animation connected!')
+        console.log('OVERLAY CONNECTED!')
       }
 
       if (message.utf8Data === 'animation-close') {
@@ -108,21 +105,15 @@ wsServer.on('request', function (request) {
         gameState.admin_connected = true
         webSockets.admin = connection// store websocket for admin
         webSockets.admin.send(JSON.stringify(gameState))
-        console.log('admin connected!')
+        console.log('ADMIN CONNECTED!')
 
         // If the character connected socket is connected and are characters are populated update the char select screen
         if (gameState.char_connected === true && gameState.players.length >= 4) {
-          webSockets.char.send(JSON.stringify({
-            type: 'gameStateUpdate',
-            gameState: gameState
-          }))
+          sendCharacterGameStateUpdate()
         }
 
         if (gameState.overlay_connected === true && gameState.players.length >= 4) {
-          webSockets.animation.send(JSON.stringify({
-            type: 'gameStateUpdate',
-            gameState: gameState
-          }))
+          sendAnimationGameStateUpdate()
         }
       }
 
@@ -134,22 +125,16 @@ wsServer.on('request', function (request) {
       if (message.utf8Data === 'char') {
         gameState.char_connected = true
         webSockets.char = connection// store websocket for admin
-        webSockets.char.send(JSON.stringify({
-          type: 'init',
-          gameState: gameState
-        }))
+        sendCharacterInit()
 
         /* send a "game start" message in [4] of char select screen */
-        webSockets.char.send(JSON.stringify({
-          type: 'gameStateUpdate',
-          gameState: gameState
-        }))
+        sendCharacterGameStateUpdate()
 
         // Send update to admin so we can see it connected visually
         if (webSockets.admin) {
           webSockets.admin.send(JSON.stringify(gameState))
         }
-        console.log('Char select connected!')
+        console.log('CHARACTER SELECT CONNECTED')
       }
 
       if (message.utf8Data === 'char-close') {
@@ -168,20 +153,18 @@ wsServer.on('request', function (request) {
           gameState.error = 'Character selection is not connected'
           webSockets.admin.send(JSON.stringify(gameState))
         } else {
-          resetState()
-          gameState.generated = true
           gameState.error = null
-          webSockets.admin.send(JSON.stringify(gameState))
-          startGame()
+          generateNewGame()
         }
       }
 
       if (message.utf8Data === 'start') {
         // close entry to the game
         gameState.in_progress = true
+        gameState.canEnter = false
+
         webSockets.admin.send(JSON.stringify(gameState))
 
-        gameState.canEnter = false
         client.action(config.channels[0], 'Game has begun! Only !random will join, !team to check.')
       } else {
         // choose a player to kill
@@ -201,7 +184,6 @@ wsServer.on('request', function (request) {
               break
           }
         } else if (gameState.suddenDeath >= 0) {
-          console.log('sudden death! Msg: ' + message.utf8Data)
           switch (message.utf8Data) {
             case '1':
               suddenDeathWinner(0)
@@ -251,15 +233,13 @@ function getRandomInt (min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function startGame () {
+function generateNewGame () {
+  resetGameState()
   chooseRoster()
-  // reset entries and players
-  gameState.entries = []
+
   for (let i = 0; i < 4; i++) {
     gameState.players[i] = new Player(gameState.roster[i], gameState.charPool[gameState.roster[i]], i)
   }
-  console.log(gameState.players[0].fullName + ' ' + gameState.players[1].fullName + ' ' + gameState.players[2].fullName + ' ' + gameState.players[3].fullName)
-
   // make entry in games table of statsDB
   db.createNewGame(gameState)
 
@@ -270,17 +250,75 @@ function startGame () {
     gameState.generated = true
     gameState.canEnter = true
 
-    webSockets.animation.send(JSON.stringify({
-      type: 'gameStateUpdate',
-      gameState: gameState
-    }))
+    webSockets.admin.send(JSON.stringify(gameState))
 
-    /* send a "game start" message in [4] of char select screen */
-    webSockets.char.send(JSON.stringify({
-      type: 'gameStateUpdate',
-      gameState: gameState
-    }))
+    sendAnimationGameStateUpdate()
+
+    sendCharacterGameStateUpdate()
   })
+}
+
+function sendCharacterGameEnd () {
+  if (!webSockets.char) return
+  webSockets.char.send(JSON.stringify({
+    type: 'gameEnd',
+    gameState: gameState
+  }))
+}
+
+function sendCharacterGameStateUpdate () {
+  if (!webSockets.char) return
+  webSockets.char.send(JSON.stringify({
+    type: 'gameStateUpdate',
+    gameState: gameState
+  }))
+}
+
+function sendCharacterPlayers () {
+  if (!webSockets.char) return
+  webSockets.char.send(JSON.stringify({
+    type: 'players',
+    gameState: gameState
+  }))
+}
+
+function sendCharacterInit () {
+  if (!webSockets.char) return
+  webSockets.char.send(JSON.stringify({
+    type: 'init',
+    gameState: gameState
+  }))
+}
+
+function sendAnimationKillPlayer () {
+  if (!webSockets.animation) return
+  webSockets.animation.send(JSON.stringify({
+    type: 'killPlayer',
+    gameState: gameState
+  }))
+}
+
+function sendAnimationSuddenDeath () {
+  if (!webSockets.animation) return
+  webSockets.animation.send(JSON.stringify({
+    type: 'suddenDeath',
+    gameState: gameState
+  }))
+}
+
+function sendAnimationGameStateUpdate () {
+  if (!webSockets.animation) return
+  webSockets.animation.send(JSON.stringify({
+    type: 'gameStateUpdate',
+    gameState: gameState
+  }))
+}
+
+function sendAnimationGameEnd () {
+  webSockets.animation.send(JSON.stringify({
+    type: 'gameEnd',
+    gameState: gameState
+  }))
 }
 
 function chooseTarget (safe) {
@@ -294,17 +332,16 @@ function chooseTarget (safe) {
     }
   }
   let target = getRandomInt(0, targets.length - 1)
-  console.log(target + ' ' + targets + ' targets.length = ' + targets.length + ' targets[target] = ' + targets[target])
   return targets[target]
 }
 
 function killPlayer (safe) {
-  console.log(gameState.players[0].fullName + ' ' + gameState.players[1].fullName + ' ' + gameState.players[2].fullName + ' ' + gameState.players[3].fullName)
+  console.log(safe, 'safe target AKA winner of round')
   if (!gameState.generated) { return }
-  let winChar
+  // let winChar
   // choose target, avoid self and dead targets
   let target = chooseTarget(safe)
-  console.log('chosen target is ' + target)
+  if (target === null || target === undefined) return
   gameState.players[target].lives--
   // make sure to mark player as dead if they are dead
   if (gameState.players[target].lives === 0) {
@@ -312,56 +349,61 @@ function killPlayer (safe) {
   }
   // give the safe player the kill
   gameState.players[safe].kills++
-  console.log(gameState.players[safe].character.name + ' just killed ' + gameState.players[target].character.name + '. They now have ' + gameState.players[target].lives + ' lives left.')
   // log kill
   gameState.killID++
   db.addKill(gameState, safe, target)
   gameState.killTargetIndex = target
   gameState.safeTargetIndex = safe
 
-  webSockets.animation.send(JSON.stringify({
-    type: 'killPlayer',
-    gameState: gameState
-  }))
-}
-
-function isGameOver () {
-// check to see if the game is over
   let done = isOver()
-// if there is a winner!
-
-  if (done === true) {
-    let winners = pickWinners()
-    if (winners.length === 1) {
-      // unlock = Unlockables(winners[0])
-      payout(winners[0], 0, '', gameState.gameID)
-      winChar = winners[0]['character']
-      gameState.winningTargetIndex = winChar
-      endGame()
-    } else if (winners.length >= 2) {
-      // sudden death here
-      gameState.suddenDeath = getRandomInt(0, 3)
-      client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
-      client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
-      winners.push('SD')
-      webSockets.admin.send(JSON.stringify(winners))
-    } else {
-      // payout all
-      // todo not sure how we would get here
-      for (let i = 0; i < 4; i++) {
-        payout(gameState.players[i], 0, '', gameState.gameID)
-      }
-    }
+  // If the game is not over show the kill player animation
+  if (!done) {
+    sendAnimationKillPlayer()
+  } else {
+    gameOver()
   }
 }
 
+function gameOver () {
+  let winners = pickWinners()
+  if (winners.length === 1) {
+    // 1 winner means no sudden death
+    // unlock = Unlockables(winners[0])
+    payout(winners[0], 0, '', gameState.gameID)
+    gameState.winningTargetIndex = winners[0]
+    endGame()
+  } else if (winners.length === 2) {
+    // 2 people reamaining is sudden death
+
+    // sudden death here
+    gameState.suddenDeath = 1
+
+    sendAnimationSuddenDeath()
+
+    // send message to twitch chat about the rules
+    client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
+    client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
+
+    webSockets.admin.send(JSON.stringify({
+      type: 'suddenDeath',
+      gameState: gameState,
+      winners: winners
+    }))
+  }
+  // else {
+  //   // payout all
+  //   // todo not sure how we would get here
+  //   for (let i = 0; i < 4; i++) {
+  //     payout(gameState.players[i], 0, '', gameState.gameID)
+  //   }
+// }
+}
+
 // if (unlock) { msg[7] = unlock }
-// console.log(JSON.stringify(msg))
 
 function suddenDeathWinner (winner) {
   // let unlock = Unlockables(players[winner])
   payout(gameState.players[winner], (gameState.players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', gameState.gameID)
-  console.log('ALERT!!@#!#!@#@!' + JSON.stringify(gameState.players[winner].character))
   let winners = pickWinners()
 
   gameState.players[4] = winner
@@ -375,31 +417,22 @@ function suddenDeathWinner (winner) {
 
   gameState.players[6] = gameState.players[winner].character
   // if (unlock) { msg[7] = unlock }
-  webSockets.animation.send(JSON.stringify({
-    type: 'killPlayer',
-    gameState: gameState
-  }))
+  sendAnimationKillPlayer()
   endGame()
 }
 
 function endGame () {
-  webSockets.animation.send(JSON.stringify({
-    type: 'gameEnd',
-    gameState: gameState
-  }))
+  sendAnimationGameEnd()
 
   // Update the state and send it to the client
-  resetState()
+  resetGameState()
 
   webSockets.admin.send(JSON.stringify(gameState))
   // Update the character selection screen
-  webSockets.char.send(JSON.stringify({
-    type: 'gameEnd',
-    gameState: gameState
-  }))
+  sendCharacterGameEnd()
 }
 
-function resetState () {
+function resetGameState () {
   gameState.suddenDeath = -1
   gameState.gameID = -1
   gameState.killID = -1
@@ -419,19 +452,23 @@ function resetState () {
 
 function pickWinners () {
   let topScore = 0
+
   // calculate each player's score
   for (let i = 0; i < 4; i++) {
+    // calculate the score
     gameState.players[i].score = gameState.players[i].kills + (gameState.players[i].lives * 2)
+    // Find the top score of all the contestants
+    if (topScore < gameState.players[i].score) {
+      topScore = gameState.players[i].score
+    }
   }
   // put all players with top score into winner array, return.
   let winners = []
   for (let i = 0; i < 4; i++) {
-    if (gameState.players[i].score >= topScore) {
-      topScore = gameState.players[i].score
+    if (gameState.players[i].score === topScore) {
       winners.push(gameState.players[i])
     }
   }
-
   return winners
 }
 
@@ -479,7 +516,6 @@ function isOver () {
 // function unlockChar (unlock) {
 //   charPool.push(unlock)
 //   jsonfile.writeFileSync('./characters.txt', charPool)
-//   console.log(unlock + ' Has joined the battle!')
 //   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
 //   var unlockAni = {'challenger': unlock}
 //   webSockets.animation.sendUTF(JSON.stringify(unlockAni))
@@ -493,17 +529,12 @@ function payout (winner, bonus, message, GID) {
   if (isNaN(pay)) { pay = 0 }
   // pay out all of winning team
   pay = parseInt(pay + bonus, 10)
-  for (let i = 0; i < winner.team.length; i++) {
-    try {
-      // OLD PAYOUT - NEEDS TO BE UPDATED!!!!
-      // db.run("UPDATE CurrencyUser SET Points = ((SELECT Points from CurrencyUser where Name='"+winner.team[i]+"')+"+pay+") WHERE Name ='"+winner.team[i]+"'");
-    } catch (er) {
-      console.log(er)
-    }
-  }
+  // for (let i = 0; i < winner.team.length; i++) {
+  //     // OLD PAYOUT - NEEDS TO BE UPDATED!!!!
+  //     // db.run("UPDATE CurrencyUser SET Points = ((SELECT Points from CurrencyUser where Name='"+winner.team[i]+"')+"+pay+") WHERE Name ='"+winner.team[i]+"'");
+  // }
   // if (bonus>0){ message= message + "Bonus Sheckels earned: " + bonus}
   db.recordStats(gameState, pay, gameState.gameID)
-  console.log(winner.team)
   if (winner.team.length > 0) {
     client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
     setTimeout(function () {
@@ -520,18 +551,14 @@ function calcPay (winners) {
   let bonus = (1 - (winners.team.length / gameState.entries.length) + 1)
   // multiply the base rate by the bonus
   let pay = bonus * baseRate
-  console.log('calculated payrate: ' + pay)
 
   return pay
 }
 
 function findTeam (username) {
-  console.log('checking team 1')
   if (gameState.entries.indexOf(username) !== -1) {
-    console.log('checking team 2')
     for (let i = 0; i < 4; i++) {
       if (gameState.players[i].team.indexOf(username) !== -1) {
-        console.log('found it!')
         return username + ' is on team ' + gameState.players[i].fullName + '!'
       }
     }
@@ -545,66 +572,66 @@ client.on('chat', function (channel, user, message, self) {
     client.timeout(config.channels[0], user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')
   }
 
+  // game not generated just return
   if (!gameState.generated) { return }
-  if (gameState.suddenDeath >= 0) {
+
+  // sudden death command
+  if (gameState.suddenDeath === 1) {
     if (message.toLowerCase() === '!' + suddenDeath[gameState.suddenDeath].toLowerCase().replace(' ', '')) {
-      client.action('config.channels[0]', suddenDeathDescriptions[gameState.suddenDeath])
-      console.log('got the message for SD')
+      client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
     }
   }
-  let msg
 
+  // Show current team
   if (message.toLowerCase() === '!team') {
-    msg = findTeam(user['username'])
-    if (msg) {
-      client.action(config.channels[0], msg)
+    let team = findTeam(user['username'])
+    if (team) {
+      client.action(config.channels[0], team)
+    }
+  }
+
+  // Join random team
+  if (message.toLowerCase() === '!random') {
+    if (gameState.entries.indexOf(user['username']) === -1) {
+      gameState.entries.push(user['username'])
+      let randTeam = getRandomInt(0, 3)
+      gameState.players[randTeam].team.push(user['username'])
+      client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
+      db.storeUser(user['username'], gameState, randTeam)
+      db.addEntry(gameState, user['username'], randTeam)
+      sendCharacterPlayers()
+      return
+    } else {
+      let team = findTeam(user['username'])
+      client.action(config.channels[0], 'Already on a team! ' + team)
+      return
     }
   }
 
   for (let i = 0; i < 4; i++) {
-    if (message.toLowerCase() === '!random') {
-      if (gameState.entries.indexOf(user['username']) === -1) {
-        gameState.entries.push(user['username'])
-        let randTeam = getRandomInt(0, 3)
-        gameState.players[randTeam].team.push(user['username'])
-        client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
-        db.storeUser(user['username'], gameState, randTeam)
-        db.addEntry(gameState, user['username'], randTeam)
-        webSockets.char.send(JSON.stringify({
-          type: 'players',
-          gameState: gameState
-        }))
-        return
-      } else {
-        msg = findTeam(user['username'])
-        client.action(config.channels[0], 'Already on a team! ' + msg)
-        return
-      }
-    }
+    // Can't enter show this message
     if (!gameState.canEnter) {
-      if (message.toLowerCase() === '!' + gameState.players[i].characte.namer || gameState.charPool[gameState.players[i].character.name].aliases.includes(message.toLowerCase())) {
-        if (gameState.entries.indexOf(user['username']) === -1) {
-          client.action(config.channels[0], 'Entries are closed! !random to join a team')
-          return
-        }
-      }
-    }
-    if (message.toLowerCase() === '!' + gameState.players[i].character.name || gameState.charPool[gameState.players[i].character.name].aliases.includes(message.toLowerCase())) {
       if (gameState.entries.indexOf(user['username']) === -1) {
-        gameState.entries.push(user['username'])
-        gameState.players[i].team.push(user['username'])
-        client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[i].fullName + '!')
-        db.storeUser(user['username'], gameState, i)
-        db.addEntry(gameState, user['username'], i)
-        webSockets.char.send(JSON.stringify({
-          type: 'players',
-          gameState: gameState
-        }))
+        client.action(config.channels[0], 'Entries are closed! !random to join a team')
         return
-      } else {
-        msg = findTeam(user['username'])
-        client.action(config.channels[0], 'Already on a team! ' + msg)
-        return
+      }
+    } else {
+      // The user can enter
+      let aliases = gameState.charPool[gameState.players[i].character.name].aliases
+      let characterName = gameState.players[i].character.name
+      if (message.toLowerCase() === ('!' + characterName) || aliases.includes(message)) {
+        // If the user is not on a team
+        if (gameState.entries.includes(user.username) === false) {
+          gameState.entries.push(user.username)
+          gameState.players[i].team.push(user.username)
+          client.action(config.channels[0], user.username + ' joined team ' + gameState.players[i].fullName + '!')
+          db.storeUser(user.username, gameState, i)
+          db.addEntry(gameState, user.username, i)
+          sendCharacterPlayers()
+        } else {
+          let team = findTeam(user.username)
+          client.action(config.channels[0], 'Already on a team! ' + team)
+        }
       }
     }
   }

@@ -22,13 +22,13 @@ $(function () {
   connection.onmessage = function (msg) {
     const event = JSON.parse(msg.data)
     console.log(event.type)
+    let game = event.gameState
     switch (event.type) {
       case 'init':
         loadCharacters(event.gameState.charPool)
         break
       case 'gameStateUpdate':
-        let game = event.gameState
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < game.players.length; i++) {
           $('#p' + (i + 1) + 'name').text(game.players[i]['fullName'])
           $('#p' + (i + 1) + 'pic').attr('src', './assets/icons/portraits/' + game.players[i].character.name + '/' + game.players[i].character.name + getRandomInt(1, 8) + '.png')
           $('#p' + (i + 1) + 'team').text('0')
@@ -45,7 +45,7 @@ $(function () {
 })
 
 function loadCharacters (unlockedCharacters) {
-  console.log(unlockedCharacters)
+  console.log(unlockedCharacters, 'Unlocked Characters')
   let charGrid = $('#character-grid')
   let basePath = './assets/icons/select-icons/'
   for (let character in unlockedCharacters) {

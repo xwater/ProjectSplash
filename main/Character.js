@@ -10,6 +10,7 @@ module.exports =
         chimes: [],
         winner: './assets/sfx/announcer/winner.wav',
         announcer: './assets/sfx/announcer/' + this.name + '.wav',
+        suddenDeath: './assets/sfx/announcer/suddendeath.wav'
       }
 
       // TODO possible modifiers

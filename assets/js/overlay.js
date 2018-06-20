@@ -27,8 +27,11 @@ $(function () {
         generateOverlay(event.gameState.players)
         break
       case 'killPlayer':
-        console.log(event)
         killPlayer(event.gameState)
+        generateOverlay(event.gameState.players)
+        break
+      case 'suddenDeath':
+        suddenDeath(event.gameState)
         generateOverlay(event.gameState.players)
         break
       case 'gameEnd':
@@ -82,13 +85,13 @@ function killPlayer (gameState) {
 
   console.log(players[gameState.safeTargetIndex].character)
   let audioToPlay = [
-    players[gameState.safeTargetIndex].character.sfx.taunts[getRandomInt(1, 5)],
+    players[gameState.safeTargetIndex].character.sfx.taunts[getRandomInt(0, 4)],
     players[gameState.safeTargetIndex].character.sfx.chimes[0]
   ]
 
   playAudio(audioToPlay)
 
-  playGif('#Wanimation', 8000, players[gameState.safeTargetIndex].character.gifs.win[getRandomInt(1, 3)])
+  playGif('#Wanimation', 8000, players[gameState.safeTargetIndex].character.gifs.win[getRandomInt(0, 2)])
   playGif('#Lanimation', 8000, players[gameState.killTargetIndex].character.gifs.lose)
 
   let lifeContainer = $('#p' + gameState.safeTargetIndex + 1)
@@ -96,6 +99,18 @@ function killPlayer (gameState) {
   setTimeout(function () {
     lifeContainer.removeClass('shakeit')
   }, 2000)
+}
+
+function suddenDeath (gameState) {
+  // TODO add sudden death MP4
+  let players = gameState.players
+  console.log(players[gameState.safeTargetIndex].character)
+  let audioToPlay = [
+    players[gameState.safeTargetIndex].character.sfx.suddenDeath
+  ]
+  setTimeout(() => {
+    playAudio(audioToPlay)
+  }, 8500)
 }
 
 function gameOver (player) {
@@ -127,8 +142,9 @@ function playVideo (duration, path) {
 }
 
 function playGif (DOMid, duration, path) {
+  console.log(DOMid, 'domID')
+  console.log(path, 'gif path')
   $(DOMid).find('img').attr('src', path).fadeIn()
-
   setTimeout(function () {
     $(DOMid).find('img').fadeOut()
   }, duration)
@@ -140,7 +156,7 @@ function generateOverlay (players) {
     lifeIcons(players[i].character.name, players[i].lives, (i + 1))
     $('#p' + (i + 1) + 'kills').text(players[i].kills)
     if (players[i].alive === false) {
-      console.log('did the kill thing to ' + players[i].character.name)
+      console.log(players[i].character.name + ' has no more lives')
     }
   }
 }
@@ -159,18 +175,6 @@ function lifeIcons (character, lives, pos) {
 function playAudio (args) {
   console.log(args)
   let audio = []
-  // audio[0] = new Howl({
-  //   src: [args[0]],
-  //   format: ['ogg', 'wav', 'mp3'],
-  //   volume: 0.3
-  // })
-  //
-  // // if only 1 sound passed, play that one sound
-  // if (args.length === 1) {
-  //   audio[0].play()
-  //   return
-  // }
-
   // build sequential sounds to play
   for (let i = 0; i < args.length; ++i) {
     (function (cntr) {

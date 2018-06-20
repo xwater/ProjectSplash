@@ -8,7 +8,7 @@ const db = new sqlite3.Database('./stats.db', sqlite3.OPEN_CREATE | sqlite3.OPEN
 })
 
 db.serialize(() => {
-  console.log('Initializing database')
+  console.log('INITIALIZING DATABASE')
   db.run('CREATE TABLE IF NOT EXISTS `Entries` (' +
     '`id` INTEGER PRIMARY KEY AUTOINCREMENT, ' +
     '`game_id` INTEGER, ' +
@@ -17,7 +17,6 @@ db.serialize(() => {
     '`random` INTEGER, ' +
     '`position` INTEGER )', error => {
     if (error) {
-      console.log(error.message)
       throw (error)
     }
   })
@@ -34,7 +33,6 @@ db.serialize(() => {
     '`player_4_score` INTEGER DEFAULT 0, ' +
     '`prize` INTEGER )', error => {
     if (error) {
-      console.log(error.message)
       throw (error)
     }
   })
@@ -45,7 +43,6 @@ db.serialize(() => {
     '`player` INTEGER, ' +
     '`target` INTEGER )', error => {
     if (error) {
-      console.log(error.message)
       throw (error)
     }
   })
@@ -58,7 +55,6 @@ db.serialize(() => {
     '`team_four_count` INTEGER DEFAULT 0, ' +
     '`season` INTEGER )', error => {
     if (error) {
-      console.log(error.message)
       throw (error)
     }
   })
@@ -67,11 +63,9 @@ db.serialize(() => {
     '`character_name` TEXT UNIQUE, ' +
     '`date_unlocked` TEXT)', error => {
     if (error) {
-      console.log(error.message)
       throw (error)
     }
   })
-  console.log('Database Initialized')
 })
 
 // record the game stats
@@ -96,7 +90,7 @@ exports.storeUser = (username, gameState, team) => {
         throw (err)
       }
       if (row) {
-        console.log('User found in table updating stats')
+        console.log('USER FOUND IN TABLE UPDATING STATS')
         switch (team) {
           case 0:
             db.run('UPDATE USERS SET team_one_count = team_one_count + 1')
@@ -112,7 +106,7 @@ exports.storeUser = (username, gameState, team) => {
             break
         }
       } else {
-        console.log('NOT FOUND! ENTER IT HERE')
+        console.log('NOT FOUND! INSERTING NEW USER')
         switch (team) {
           case 0:
             db.run('INSERT INTO Users (user, season, team_one_count) VALUES (?,?,?)', username, gameState.season, 1)
@@ -130,7 +124,6 @@ exports.storeUser = (username, gameState, team) => {
       }
     })
   })
-  console.log('done checkin')
 }
 
 exports.createNewGame = (gameState) => {
@@ -167,10 +160,7 @@ exports.addKill = (gameState, safe, target) => {
         gameState.killID,
         gameState.players[safe].character.name,
         gameState.players[target].character.name
-      ],
-      function (err) {
-        console.log(err)
-      })
+      ])
   })
 }
 
@@ -227,7 +217,7 @@ function createTimestamp () {
 }
 
 exports.initCharacters = (characters) => {
-  console.log('Loading Initial Characters')
+  console.log('LOADING INITIAL CHARACTERS')
   let timeStamp = createTimestamp()
   db.serialize(() => {
     db.run('BEGIN TRANSACTION')
