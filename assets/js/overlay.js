@@ -35,7 +35,7 @@ $(function () {
         generateOverlay(event.gameState.players)
         break
       case 'gameEnd':
-        gameOver(event.gameState.players[event.gameState.safeTargetIndex])
+        gameOver(event.gameState.players[event.gameState.winningTargetIndex])
         generateOverlay(event.gameState.players)
         break
       default:
@@ -78,6 +78,14 @@ setTimeout(function(){
 },10000)
 */
 
+function animateLifeContainer (safeTarget) {
+  let lifeContainer = $('#p' + safeTarget + 1)
+  lifeContainer.addClass('shakeit')
+  setTimeout(function () {
+    lifeContainer.removeClass('shakeit')
+  }, 2000)
+}
+
 function killPlayer (gameState) {
   let players = gameState.players
   console.log('Winner index: ', gameState.safeTargetIndex)
@@ -94,23 +102,29 @@ function killPlayer (gameState) {
   playGif('#Wanimation', 8000, players[gameState.safeTargetIndex].character.gifs.win[getRandomInt(0, 2)])
   playGif('#Lanimation', 8000, players[gameState.killTargetIndex].character.gifs.lose)
 
-  let lifeContainer = $('#p' + gameState.safeTargetIndex + 1)
-  lifeContainer.addClass('shakeit')
-  setTimeout(function () {
-    lifeContainer.removeClass('shakeit')
-  }, 2000)
+  animateLifeContainer(gameState.safeTargetIndex)
 }
 
 function suddenDeath (gameState) {
   // TODO add sudden death MP4
   let players = gameState.players
   console.log(players[gameState.safeTargetIndex].character)
-  let audioToPlay = [
-    players[gameState.safeTargetIndex].character.sfx.suddenDeath
+  let roundWinnerAudio = [
+    players[gameState.safeTargetIndex].character.sfx.taunts[getRandomInt(0, 4)],
+    players[gameState.safeTargetIndex].character.sfx.chimes[0]
   ]
+
+  playAudio(roundWinnerAudio)
+
+  playGif('#Wanimation', 8000, players[gameState.safeTargetIndex].character.gifs.win[getRandomInt(0, 2)])
+  playGif('#Lanimation', 8000, players[gameState.killTargetIndex].character.gifs.lose)
+
+  animateLifeContainer(gameState.safeTargetIndex)
+
   setTimeout(() => {
-    playAudio(audioToPlay)
-  }, 8500)
+    let suddenDeathAudio = [players[gameState.safeTargetIndex].character.sfx.suddenDeath]
+    playAudio(suddenDeathAudio)
+  }, 1000 * 11)
 }
 
 function gameOver (player) {

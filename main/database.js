@@ -152,14 +152,14 @@ exports.getGameId = async () => {
   })
 }
 
-exports.addKill = (gameState, safe, target) => {
+exports.addKill = (gameState) => {
   db.serialize(() => {
     db.run('INSERT INTO Kills (game_id,kill_id,player,target) VALUES (?,?,?,?)',
       [
         gameState.gameID,
         gameState.killID,
-        gameState.players[safe].character.name,
-        gameState.players[target].character.name
+        gameState.safeTargetIndex,
+        gameState.killTargetIndex
       ])
   })
 }

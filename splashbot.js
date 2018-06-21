@@ -27,7 +27,8 @@ const gameState = {
   players: [],
   roster: [],
   entries: [],
-  charPool: []
+  charPool: [],
+  winners: []
 }
 
 const webSockets = {
@@ -183,7 +184,7 @@ wsServer.on('request', function (request) {
               killPlayer(3)
               break
           }
-        } else if (gameState.suddenDeath >= 0) {
+        } else if (gameState.suddenDeath === 1) {
           switch (message.utf8Data) {
             case '1':
               suddenDeathWinner(0)
@@ -336,28 +337,33 @@ function chooseTarget (safe) {
 }
 
 function killPlayer (safe) {
-  console.log(safe, 'safe target AKA winner of round')
   if (!gameState.generated) { return }
-  // let winChar
+
   // choose target, avoid self and dead targets
   let target = chooseTarget(safe)
-  if (target === null || target === undefined) return
+  if (target === null || target === undefined) return // this shouldn't happen but lets check anyways
+
   gameState.players[target].lives--
+
   // make sure to mark player as dead if they are dead
   if (gameState.players[target].lives === 0) {
     gameState.players[target].alive = false
   }
+
   // give the safe player the kill
   gameState.players[safe].kills++
+
   // log kill
   gameState.killID++
-  db.addKill(gameState, safe, target)
   gameState.killTargetIndex = target
   gameState.safeTargetIndex = safe
 
-  let done = isOver()
-  // If the game is not over show the kill player animation
-  if (!done) {
+  db.addKill(gameState)
+
+
+
+  if (!isOver()) {
+    // If the game is not over show the kill player animation
     sendAnimationKillPlayer()
   } else {
     gameOver()
@@ -365,17 +371,17 @@ function killPlayer (safe) {
 }
 
 function gameOver () {
-  let winners = pickWinners()
-  if (winners.length === 1) {
+  getWinners()
+  if (gameState.winners.length === 1) {
     // 1 winner means no sudden death
     // unlock = Unlockables(winners[0])
-    payout(winners[0], 0, '', gameState.gameID)
-    gameState.winningTargetIndex = winners[0]
+    payout(gameState.winners[0], 0, '', gameState.gameID)
+    gameState.winningTargetIndex = gameState.winners[0].pos
     endGame()
-  } else if (winners.length === 2) {
+  } else if (gameState.winners.length === 2) {
     // 2 people reamaining is sudden death
 
-    // sudden death here
+    // Enable sudden death
     gameState.suddenDeath = 1
 
     sendAnimationSuddenDeath()
@@ -384,11 +390,7 @@ function gameOver () {
     client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
     client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
 
-    webSockets.admin.send(JSON.stringify({
-      type: 'suddenDeath',
-      gameState: gameState,
-      winners: winners
-    }))
+    webSockets.admin.send(JSON.stringify(gameState))
   }
   // else {
   //   // payout all
@@ -404,20 +406,11 @@ function gameOver () {
 function suddenDeathWinner (winner) {
   // let unlock = Unlockables(players[winner])
   payout(gameState.players[winner], (gameState.players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', gameState.gameID)
-  let winners = pickWinners()
 
-  gameState.players[4] = winner
+  // Increment thw inners kill count
+  gameState.players[winner].kills += 1
+  gameState.winningTargetIndex = winner
 
-  // grab both winners again, put loser position into msg[5]
-  if (winners[0].pos === winner) {
-    gameState.players[5] = winners[1].pos
-  } else {
-    gameState.players[5] = winners[0].pos
-  }
-
-  gameState.players[6] = gameState.players[winner].character
-  // if (unlock) { msg[7] = unlock }
-  sendAnimationKillPlayer()
   endGame()
 }
 
@@ -448,11 +441,11 @@ function resetGameState () {
   gameState.players = []
   gameState.entries = []
   gameState.roster = []
+  gameState.winners = []
 }
 
-function pickWinners () {
+function getWinners () {
   let topScore = 0
-
   // calculate each player's score
   for (let i = 0; i < 4; i++) {
     // calculate the score
@@ -463,13 +456,11 @@ function pickWinners () {
     }
   }
   // put all players with top score into winner array, return.
-  let winners = []
   for (let i = 0; i < 4; i++) {
     if (gameState.players[i].score === topScore) {
-      winners.push(gameState.players[i])
+      gameState.winners.push(gameState.players[i])
     }
   }
-  return winners
 }
 
 function isOver () {
@@ -482,34 +473,25 @@ function isOver () {
   return aliveCount === 1
 }
 
-// function Unlockables (winner) {
-//   if (charPool.indexOf('sonic') === -1) {
-//     if (players[0].kills > 4) {
-//       return unlockChar('sonic')
-//     }
-//   }
-//   if (charPool.indexOf('gaw') === -1) {
-//     if (winner.lives === 2 && winner.kills === 0) {
-//       return unlockChar('gaw')
-//     }
-//   }
-//   if (charPool.indexOf('squirtle') === -1) {
-//     if ((winner.character === 'pika' || winner.character === 'puff') && entries.length > 99) {
-//       return unlockChar('squirtle')
-//     }
-//   }
-//   if (charPool.indexOf('mii') === -1) {
-//     if (winner.team.indexOf('xwater') > -1) {
-//       return unlockChar('mii')
-//     }
-//   }
+function checkUnlocks (winningTargetIndex) {
+  let winner = gameState.winners[winningTargetIndex]
+  let activePlayers = []
+  for (let i = 0; i < gameState.players.length; i++) {
+    activePlayers.push(gameState.players[i].character.name)
+  }
 
-// zelda win  =shiek
-// samus win = zero suit
-// game and watch win = wii fit trainer
-// 3 mario charcaters = rosalina
-// > 5 points = lucian
-// ike
+  if (winner.name === characters.ZELDA) {
+    // unlock ZELDA
+  } else if (winner.name === characters.SAMUS) {
+    // unlock ZERO SUIT
+  } else if (winner.name === characters.GAME_AND_WATCH) {
+    // unlock wii fit trainer
+  } else if (winner.name === characters.MARTH && winner.score >= 5) {
+    // unlock lucina
+  } else if (activePlayers.includes(characters.MARIO) && activePlayers.includes(characters.LUIGI) && activePlayers.includes(characters.YOSHI)) {
+    // unlock rosalina
+  }
+}
 
 // }
 
@@ -566,7 +548,6 @@ function findTeam (username) {
 }
 
 // twitch message interface
-
 client.on('chat', function (channel, user, message, self) {
   if (message.toLowerCase() === '!replace 03b9-0000-0297-aa32') {
     client.timeout(config.channels[0], user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')

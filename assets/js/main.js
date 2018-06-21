@@ -40,20 +40,20 @@ $(function () {
 
   connection.onmessage = function (message) {
     console.log(message)
-    const data = JSON.parse(message.data)
+    const gameState = JSON.parse(message.data)
     // updateState(JSON.stringify(data, null, '  '))
 
     // Display Any Errors
-    if (data.error !== null) {
-      showErrors(data.error)
+    if (gameState.error !== null) {
+      showErrors(gameState.error)
     } else {
       hideErrors()
     }
 
     // Game has been generated
-    if (data.generated === true) {
+    if (gameState.generated === true) {
       generateBtn.hide()
-      if (data.in_progress === true) {
+      if (gameState.in_progress === true) {
         showPlayers('')
         startBtn.hide()
       } else {
@@ -65,37 +65,37 @@ $(function () {
       hidePlayers('')
     }
 
-    if (data.type === 'suddenDeath') {
+    if (gameState.suddenDeath === 1) {
       hidePlayers('')
-      $('#p' + (data.winners[0].pos + 1)).show() // +1 because the divs are not zero indexed
-      $('#p' + (data.winners[1].pos + 1)).show()// +1 because the divs are not zero indexed
+      $('#p' + (gameState.winners[0].pos + 1)).show() // +1 because the divs are not zero indexed
+      $('#p' + (gameState.winners[1].pos + 1)).show()// +1 because the divs are not zero indexed
     }
 
-    if (data === 'The animation is not connected') {
+    if (gameState === 'The animation is not connected') {
       showErrors('The overlay window or character selection screen is not open. If they are open please refresh this page and the other two windows and try again.')
     }
 
     // socket connected messages
 
-    if (data.overlay_connected === true) {
+    if (gameState.overlay_connected === true) {
       overlay.show()
     } else {
       overlay.hide()
     }
-    if (data.char_connected === true) {
+    if (gameState.char_connected === true) {
       charScreen.show()
     } else {
       charScreen.hide()
     }
 
-    if (data.admin_connected === true) {
+    if (gameState.admin_connected === true) {
       admin.show()
     } else {
       admin.hide()
     }
 
     // All our sockets are connected
-    if (data.overlay_connected === true && data.char_connected === true && data.admin_connected === true) {
+    if (gameState.overlay_connected === true && gameState.char_connected === true && gameState.admin_connected === true) {
       showStatusMessage('connection ready!')
     }
   }

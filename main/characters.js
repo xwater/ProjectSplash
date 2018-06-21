@@ -102,8 +102,8 @@ let unlockableCharacters = [
   ROSALINA,
   SHEIK,
   PALUTENA,
-  MARTH,
-  LUCINA
+  LUCINA,
+  WII_FIT_TRAINER
   // BOWSER,
   // BOWSER_JR,
   // DIDDY,
@@ -126,7 +126,7 @@ let unlockableCharacters = [
 ]
 
 let defaultCharacters = [
-  WII_FIT_TRAINER,
+  MARTH,
   PEACH,
   ZELDA,
   CAPTAIN_FALCON,
