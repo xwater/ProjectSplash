@@ -103,6 +103,7 @@ let unlockableCharacters = [
   SHEIK,
   PALUTENA,
   LUCINA,
+  SAMUS_ZERO,
   WII_FIT_TRAINER
   // BOWSER,
   // BOWSER_JR,
@@ -125,40 +126,67 @@ let unlockableCharacters = [
   // MEGA_MAN
 ]
 
-let defaultCharacters = [
-  MARTH,
-  PEACH,
-  ZELDA,
-  CAPTAIN_FALCON,
-  DK,
-  FOX,
-  GAME_AND_WATCH,
-  IKE,
+// note roster displays in reverse order
+let roster = [
+  MII,
+
+  NESS,
+
+  SQUIRTLE,
+  PIKACHU,
   JIGGILY_PUFF,
+
+  SONIC,
+
   KING_DE_DE_DE,
   KIRBY,
+
+  FOX,
+
+  CAPTAIN_FALCON,
+
+  LUCINA,
+  IKE,
+  MARTH,
+
+  WII_FIT_TRAINER,
+
+  GAME_AND_WATCH,
+
+  PALUTENA,
+  PIT,
+
+  SHEIK,
+  ZELDA,
   LINK,
-  LUIGI,
-  MARIO,
-  MII,
-  NESS,
-  PIKACHU,
+
+  SAMUS_ZERO,
   SAMUS,
-  SONIC,
-  SQUIRTLE,
+
+  DK,
+
+  ROSALINA,
+  PEACH,
   YOSHI,
-  PIT
+  LUIGI,
+  MARIO
+
 ]
 
 function init () {
   return new Promise(resolve => {
     let characters = {}
-    for (let i = 0; i < defaultCharacters.length; i++) {
-      characters[defaultCharacters[i]] = (new Character(i, defaultCharacters[i], true, aliases[defaultCharacters[i]]))
-    }
-
-    for (let i = 0; i < unlockableCharacters.length; i++) {
-      characters[unlockableCharacters[i]] = (new Character(i, unlockableCharacters[i], false, aliases[unlockableCharacters[i]]))
+    for (let i = 0; i < roster.length; i++) {
+      let currentChar = roster[i]
+      if (unlockableCharacters.includes(currentChar)) {
+        for (let j = 0; j < unlockableCharacters.length; j++) {
+          if (unlockableCharacters[j] === roster[i]) {
+            characters[unlockableCharacters[j]] = (new Character(i, unlockableCharacters[j], false, aliases[unlockableCharacters[j]]))
+          }
+        }
+      } else {
+        characters[roster[i]] = (new Character(i, roster[i], true, aliases[roster[i]]))
+      }
     }
 
     db.initCharacters(characters)
