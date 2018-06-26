@@ -8,13 +8,13 @@ module.exports = {
     reconnect: true
   },
   identity: {
-    username: 'WEEBBOT', // bot username
-    password: 'oauth:isb0LmBG3CeEfT1mJ7tvQ0J8CSvyWv', // oauth token with the 'oauth:' prefix
-    oauth: 'isb0LmBG3CeEfT1mJ7tvQ0J8CSvyWv' // just the oauth token
+    username: 'chinnbot', // bot username
+    password: 'oauth:dfvhm92wcfctkt3ke55lta78ye8060', // oauth token with the 'oauth:' prefix
+    oauth: 'dfvhm92wcfctkt3ke55lta78ye8060' // just the oauth token
   },
   // Array of channels for your bot to join
   // Example channel #xwater
   channels: [
-    '#YOURCHANNEL'
+    '#blackmarmalade'
   ]
 }

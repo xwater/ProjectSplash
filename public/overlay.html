@@ -25,9 +25,9 @@
 </head>
 <body style="background-repeat: no-repeat;">
 <div id="overlay">
-    <div id="challenger">
-        <video id="video" width="1920" style="display:none; z-index:99;">
-            <source id="mp4src" type="video/mp4" src="../assets/gifs/victory/dedede/dedede.mp4">
+    <div v-if="showVideo == true">
+        <video id="video" width="1920" style="z-index:99;" autoplay>
+            <source id="mp4src" type="video/mp4" :src="videoURL">
         </video>
     </div>
 
@@ -41,8 +41,11 @@
     </div>
 
     <div id="game-container">
-        <div class="charbox" v-for="player in gameState.players">
-            <img class="charicon left" :src="player.character.portraits.livePortrait">
+        <div class="charbox" v-for="(player, index) in gameState.players">
+            <img class="charicon left"
+                 :id="`player-` + (index+1)+ `-portrait`"
+                 :src="player.character.portraits.livePortrait"
+                 :class="{shakeIt: shake(index)}">
             <div class="charinfo left">
                 <div class="lives">
                     <img v-for="n in player.lives" :src="player.character.icons.liveIcon">
@@ -53,7 +56,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -74,11 +76,28 @@
         shake1: false,
         shake2: false,
         shake3: false,
-        shake4: false
+        shake4: false,
+        videoURL: null,
+        showVideo: false
 
       }
     },
+
+    computed: {},
     methods: {
+
+      shake (index) {
+        switch (index) {
+          case 0:
+            return this.shake1
+          case 1:
+            return this.shake2
+          case 2:
+            return this.shake3
+          case 3:
+            return this.shake4
+        }
+      },
 
       connect () {
         if (!this.socketInit) {
@@ -120,18 +139,16 @@
         let audio = []
         // build sequential sounds to play
         for (let i = 0; i < args.length; ++i) {
-          (function (cntr) {
-            audio[i] = new Howl({
-              src: [args[cntr]],
-              format: ['ogg', 'wav', 'mp3'],
-              volume: 0.5,
-              onend: function () {
-                if (audio[cntr - 1]) {
-                  audio[cntr - 1].play()
-                }
+          audio[i] = new Howl({
+            src: [args[i]],
+            format: ['ogg', 'wav', 'mp3'],
+            volume: 0.5,
+            onend: function () {
+              if (audio[i - 1]) {
+                audio[i - 1].play()
               }
-            })
-          })(i)
+            }
+          })
         }
 
         audio[args.length - 1].play()
@@ -142,7 +159,6 @@
         console.log('Winner index: ', this.gameState.safeTargetIndex)
         console.log('Loser index: ', this.gameState.killTargetIndex)
 
-        console.log(players[this.gameState.safeTargetIndex].character)
         let audioToPlay = [
           players[this.gameState.safeTargetIndex].character.sfx.taunts[this.getRandomInt(0, 4)],
           players[this.gameState.safeTargetIndex].character.sfx.chimes[0]
@@ -159,39 +175,84 @@
 
         this.playAudio(audioToPlay)
 
-        // playGif('#Wanimation', 8000, players[this.gameState.safeTargetIndex].character.gifs.win[getRandomInt(0, 2)])
-        // playGif('#Lanimation', 8000, players[this.gameState.killTargetIndex].character.gifs.lose)
-
-        this.animateLifeContainer(gameState.safeTargetIndex)
+        this.animateLifeContainer()
       },
 
-      animateLifeContainer (shakeTarget) {
-        switch (shakeTarget){
+      animateLifeContainer () {
+        let shakeTarget = this.gameState.safeTargetIndex
+        switch (shakeTarget) {
           case 0:
-            this.shake1 = true;
-            setTimeout(function () {
-              this.shake1 = false;
+            this.shake1 = true
+            setTimeout(() => {
+              this.shake1 = false
             }, 2000)
-            break;
+            break
           case 1:
-            this.shake2 = true;
-            setTimeout(function () {
-              this.shake2 = false;
+            this.shake2 = true
+            setTimeout(() => {
+              this.shake2 = false
             }, 2000)
-            break;
+            break
           case 2:
-            this.shake3 = true;
-            setTimeout(function () {
-              this.shake4 = false;
+            this.shake3 = true
+            setTimeout(() => {
+              this.shake3 = false
             }, 2000)
-            break;
+            break
           case 3:
-            this.shake3 = true;
-            setTimeout(function () {
-              this.shake4 = false;
+            this.shake4 = true
+            setTimeout(() => {
+              this.shake4 = false
             }, 2000)
-            break;
+            break
         }
+      },
+
+      suddenDeath () {
+        // TODO add sudden death MP4
+        let players = this.gameState.players
+
+        let roundWinnerAudio = [
+          players[this.gameState.safeTargetIndex].character.sfx.taunts[this.getRandomInt(0, 4)],
+          players[this.gameState.safeTargetIndex].character.sfx.chimes[0]
+        ]
+
+        this.playAudio(roundWinnerAudio)
+
+        this.showWinLoseAnimation = true
+
+        this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
+        this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
+
+        setTimeout(() => {
+          this.showWinLoseAnimation = false
+        }, 1000 * 8)
+
+        this.animateLifeContainer()
+
+        setTimeout(() => {
+          let suddenDeathAudio = [players[this.gameState.safeTargetIndex].character.sfx.suddenDeath]
+          this.playAudio(suddenDeathAudio)
+        }, 1000 * 11)
+      },
+
+      gameOver () {
+        let winner = this.gameState.players[this.gameState.winningTargetIndex]
+        // console.log('Winner is: ', player)
+        this.showVideo = true
+
+        this.videoURL = winner.character.videos.victory
+
+        setTimeout(()=>{
+          this.showVideo = false;
+        },7600)
+
+        let audioToPlay = [
+          winner.character.sfx.announcer,
+          winner.character.sfx.winner,
+          winner.character.sfx.chimes[0]
+        ]
+        this.playAudio(audioToPlay)
       }
 
     },
@@ -203,11 +264,18 @@
       })
 
       this.socket.on('kill-player', gameState => {
-        console.log('hi')
         this.gameState = gameState
         this.killPlayer(event.gameState)
       })
 
+      this.socket.on('sudden-death', gameState => {
+        this.gameState = gameState
+        this.suddenDeath()
+      })
+      this.socket.on('game-over', gameState =>{
+        this.gameState = gameState
+        this.gameOver()
+      })
     }
   })
 </script>

@@ -6,18 +6,12 @@ const express = require('express')
 const app = express()
 const socket = require('socket.io')
 const server = app.listen(config.serverPort, function () {
-  console.log('listening to requests on port ' + config.serverPort)
+  console.log('listening on http://localhost:' + config.serverPort)
 })
 
 app.use(express.static('public'))
 
 const io = socket(server, {
-  // path: '/test',
-  // serveClient: false,
-  // // below are engine.IO options
-  // pingInterval: 10000,
-  // pingTimeout: 5000,
-  // cookie: false
 })
 
 const tmi = require('tmi.js')
@@ -121,7 +115,6 @@ io.on('connection', (socket) => {
   })
 
   socket.on('kill-player', (playerId) => {
-    console.log(playerId)
     switch(playerId){
       case 1:
         killPlayer(0)
@@ -139,7 +132,7 @@ io.on('connection', (socket) => {
 
   })
 
-  socket.on('suddenDeathWinner', (playerId) => {
+  socket.on('sudden-death-winner', (playerId) => {
     switch (playerId) {
       case 1:
         suddenDeathWinner(0)
@@ -207,22 +200,6 @@ function generateNewGame () {
   })
 }
 
-
-function sendAnimationSuddenDeath () {
-  if (!webSockets.overlay) return
-  webSockets.overlay.send(JSON.stringify({
-    type: 'suddenDeath',
-    gameState: gameState
-  }))
-}
-
-function sendAnimationGameEnd () {
-  webSockets.overlay.send(JSON.stringify({
-    type: 'gameEnd',
-    gameState: gameState
-  }))
-}
-
 function chooseTarget (safe) {
   // array where key is random number, value is player ID of who to kill
   let targets = []
@@ -284,13 +261,13 @@ function gameOver () {
     // Enable sudden death
     gameState.suddenDeath = 1
 
-    sendAnimationSuddenDeath()
+    io.to(webSockets.overlay).emit('sudden-death', gameState)
+    io.sockets.emit('gameStateUpdate', gameState)
 
     // send message to twitch chat about the rules
     twitchClient.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
     twitchClient.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
 
-    webSockets.admin.send(JSON.stringify(gameState))
   }
   // else {
   //   // payout all
@@ -315,7 +292,7 @@ function suddenDeathWinner (winner) {
 }
 
 function endGame () {
-  sendAnimationGameEnd()
+  io.to(webSockets.overlay).emit('game-over', gameState)
 
   // Update the state and send it to the client
   resetGameState()

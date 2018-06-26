@@ -42,10 +42,10 @@
     </div>
 </nav>
 
-<div class="container" id="app">
+<div id="app" class="container">
     <div class="row pt-4">
         <div class="col-sm-6 shadow-lg p-3 mb-5 bg-white rounded">
-            <div v-show="gameState.inProgress">
+            <div v-show="gameState.inProgress && gameState.suddenDeath != 1">
                 <button id="p1" class="btn btn-info" @click="normalWin(1)">Player 1 Win</button>
                 <button id="p2" class="btn btn-success" @click="normalWin(2)">Player 2 Win</button>
                 <button id="p3" class="btn btn-danger" @click="normalWin(3)">Player 3 Win</button>
@@ -53,10 +53,11 @@
             </div>
 
             <div v-show="gameState.suddenDeath == 1 && gameState.inProgress">
-                <button v-show="suddenDeathPlayer1" class="btn btn-info">Player 1 Win SD</button>
-                <button v-show="suddenDeathPlayer2" class="btn btn-success">Player 2 Win SD</button>
-                <button v-show="suddenDeathPlayer3" class="btn btn-danger">Player 3 Win SD</button>
-                <button v-show="suddenDeathPlayer4" class="btn btn-warning">Player 4 Win SD</button>
+                <h1 style="padding-bottom: 10px">Sudden Death!</h1>
+                <button v-show="suddenDeathPlayer1" class="btn btn-info" @click="suddenDeathWin(1)">Player 1 Win SD</button>
+                <button v-show="suddenDeathPlayer2" class="btn btn-success" @click="suddenDeathWin(2)">Player 2 Win SD</button>
+                <button v-show="suddenDeathPlayer3" class="btn btn-danger" @click="suddenDeathWin(3)">Player 3 Win SD</button>
+                <button v-show="suddenDeathPlayer4" class="btn btn-warning" @click="suddenDeathWin(4)">Player 4 Win SD</button>
             </div>
 
             <div v-show="gameState.inProgress == false && gameState.generated" class="btn-group-vertical">
@@ -84,6 +85,7 @@
         </div>
     </div>
 </div>
+
 </body>
 </html>
 
@@ -105,6 +107,10 @@
     methods: {
       normalWin (team) {
         this.socket.emit('kill-player', team)
+      },
+
+      suddenDeathWin (team) {
+        this.socket.emit('sudden-death-winner', team)
       },
 
       startGame () {
