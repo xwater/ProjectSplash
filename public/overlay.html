@@ -1,0 +1,213 @@
+<html>
+<head>
+    <link rel="stylesheet" href="../assets/css/overlay.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+            integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+            crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="../assets/js/howler.js-2.0.12/dist/howler.min.js"></script>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js" integrity="sha256-ji09tECORKvr8xB9iCl8DJ8iNMLriDchC1+p+yt1hSs=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+    <title>Splash Bros - Overlay</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/favicon/site.webmanifest">
+    <link rel="mask-icon" href="./assets/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+</head>
+<body style="background-repeat: no-repeat;">
+<div id="overlay">
+    <div id="challenger">
+        <video id="video" width="1920" style="display:none; z-index:99;">
+            <source id="mp4src" type="video/mp4" src="../assets/gifs/victory/dedede/dedede.mp4">
+        </video>
+    </div>
+
+    <div id="animation_container">
+        <div id="Wanimation">
+            <img :src="winAnimation" height="350px" v-if="showWinLoseAnimation === true">
+        </div>
+        <div id="Lanimation">
+            <img :src="loseAnimation" height="350px" v-if="showWinLoseAnimation === true">
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div class="charbox" v-for="player in gameState.players">
+            <img class="charicon left" :src="player.character.portraits.livePortrait">
+            <div class="charinfo left">
+                <div class="lives">
+                    <img v-for="n in player.lives" :src="player.character.icons.liveIcon">
+                </div>
+                <div class="kills">
+                    <img class="left" src="../assets/icons/swordicon-bg.png">
+                    <p class="kills_count left">{{player.kills}}</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
+<script type="text/javascript">
+  let app = new Vue({
+    el: '#overlay',
+    data () {
+      return {
+        socket: null,
+        socketInit: false,
+        socketError: null,
+        gameState: {},
+        winAnimation: null,
+        loseAnimation: null,
+        showWinLoseAnimation: false,
+        shake1: false,
+        shake2: false,
+        shake3: false,
+        shake4: false
+
+      }
+    },
+    methods: {
+
+      connect () {
+        if (!this.socketInit) {
+          this.socket = io.connect('ws://localhost:3000', {
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: Infinity
+          })
+          this.socketInit = true
+
+          this.socket.on('connect', () => {
+            this.socket.emit('overlay-connected', {})
+          })
+
+          this.socket.on('reconnect', (attemptNumber) => {
+            this.socket.emit('overlay-connected', {})
+          })
+
+          this.socket.on('disconnect', () => {
+            this.socket.disconnect()
+            setTimeout(() => {
+              this.connect()
+            }, 5000)
+          })
+        }
+        else {
+          this.socket.io.reconnect()
+        }
+      },
+
+      getRandomInt (min, max) {
+        return Math.floor(Math.random() * max) + 1
+      },
+
+      // plays audio, arg is path of sound to play.  if multiple files, will play sequentially
+      playAudio (args) {
+        // console.log(args)
+        let audio = []
+        // build sequential sounds to play
+        for (let i = 0; i < args.length; ++i) {
+          (function (cntr) {
+            audio[i] = new Howl({
+              src: [args[cntr]],
+              format: ['ogg', 'wav', 'mp3'],
+              volume: 0.5,
+              onend: function () {
+                if (audio[cntr - 1]) {
+                  audio[cntr - 1].play()
+                }
+              }
+            })
+          })(i)
+        }
+
+        audio[args.length - 1].play()
+      },
+
+      killPlayer () {
+        let players = this.gameState.players
+        console.log('Winner index: ', this.gameState.safeTargetIndex)
+        console.log('Loser index: ', this.gameState.killTargetIndex)
+
+        console.log(players[this.gameState.safeTargetIndex].character)
+        let audioToPlay = [
+          players[this.gameState.safeTargetIndex].character.sfx.taunts[this.getRandomInt(0, 4)],
+          players[this.gameState.safeTargetIndex].character.sfx.chimes[0]
+        ]
+
+        this.showWinLoseAnimation = true
+
+        this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
+        this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
+
+        setTimeout(() => {
+          this.showWinLoseAnimation = false
+        }, 1000 * 8)
+
+        this.playAudio(audioToPlay)
+
+        // playGif('#Wanimation', 8000, players[this.gameState.safeTargetIndex].character.gifs.win[getRandomInt(0, 2)])
+        // playGif('#Lanimation', 8000, players[this.gameState.killTargetIndex].character.gifs.lose)
+
+        this.animateLifeContainer(gameState.safeTargetIndex)
+      },
+
+      animateLifeContainer (shakeTarget) {
+        switch (shakeTarget){
+          case 0:
+            this.shake1 = true;
+            setTimeout(function () {
+              this.shake1 = false;
+            }, 2000)
+            break;
+          case 1:
+            this.shake2 = true;
+            setTimeout(function () {
+              this.shake2 = false;
+            }, 2000)
+            break;
+          case 2:
+            this.shake3 = true;
+            setTimeout(function () {
+              this.shake4 = false;
+            }, 2000)
+            break;
+          case 3:
+            this.shake3 = true;
+            setTimeout(function () {
+              this.shake4 = false;
+            }, 2000)
+            break;
+        }
+      }
+
+    },
+    mounted () {
+      this.connect()
+
+      this.socket.on('gameStateUpdate', gameState => {
+        this.gameState = gameState
+      })
+
+      this.socket.on('kill-player', gameState => {
+        console.log('hi')
+        this.gameState = gameState
+        this.killPlayer(event.gameState)
+      })
+
+    }
+  })
+</script>

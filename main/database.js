@@ -2,13 +2,13 @@ const sqlite3 = require('sqlite3').verbose()
 
 const db = new sqlite3.Database('./stats.db', sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE, (error) => {
   if (error) {
-    console.error(error.message)
+    // console.error(error.message)
     throw (error)
   }
 })
 
 db.serialize(() => {
-  console.log('INITIALIZING DATABASE')
+  // console.log('INITIALIZING DATABASE')
   db.run('CREATE TABLE IF NOT EXISTS `Entries` (' +
     '`id` INTEGER PRIMARY KEY AUTOINCREMENT, ' +
     '`game_id` INTEGER, ' +
@@ -90,7 +90,7 @@ exports.storeUser = (username, gameState, team) => {
         throw (err)
       }
       if (row) {
-        console.log('USER FOUND IN TABLE UPDATING STATS')
+        // console.log('USER FOUND IN TABLE UPDATING STATS')
         switch (team) {
           case 0:
             db.run('UPDATE USERS SET team_one_count = team_one_count + 1')
@@ -106,7 +106,7 @@ exports.storeUser = (username, gameState, team) => {
             break
         }
       } else {
-        console.log('NOT FOUND! INSERTING NEW USER')
+        // console.log('NOT FOUND! INSERTING NEW USER')
         switch (team) {
           case 0:
             db.run('INSERT INTO Users (user, season, team_one_count) VALUES (?,?,?)', username, gameState.season, 1)
@@ -217,7 +217,7 @@ function createTimestamp () {
 }
 
 exports.initCharacters = (characters) => {
-  console.log('LOADING INITIAL CHARACTERS')
+  // console.log('LOADING INITIAL CHARACTERS')
   let timeStamp = createTimestamp()
   db.serialize(() => {
     db.run('BEGIN TRANSACTION')

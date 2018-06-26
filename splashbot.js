@@ -2,18 +2,32 @@
 const config = require('./config')
 const Player = require('./main/Player')
 const db = require('./main/database')
+const express = require('express')
+const app = express()
+const socket = require('socket.io')
+const server = app.listen(config.serverPort, function () {
+  console.log('listening to requests on port ' + config.serverPort)
+})
 
-const WebSocketServer = require('websocket').server
+app.use(express.static('public'))
 
-const http = require('http')
+const io = socket(server, {
+  // path: '/test',
+  // serveClient: false,
+  // // below are engine.IO options
+  // pingInterval: 10000,
+  // pingTimeout: 5000,
+  // cookie: false
+})
+
 const tmi = require('tmi.js')
 
 const gameState = {
   generated: false,
-  admin_connected: false,
-  char_connected: false,
-  in_progress: false,
-  overlay_connected: false,
+  adminConnected: false,
+  characterSelectionConnected: false,
+  inProgress: false,
+  overlayConnected: false,
   ready: false,
   error: null,
   gameID: -1,
@@ -32,13 +46,13 @@ const gameState = {
 }
 
 const webSockets = {
-  animation: null,
+  overlay: null,
   admin: null,
   char: null
 }
 
 // generate character pools
-let characters = require('./main/characters')
+let characters = require('./main/roster')
 characters.init().then(characters => {
   gameState.charPool = characters
 })
@@ -57,152 +71,91 @@ let suddenDeathDescriptions = [
 ]
 
 // eslint-disable-next-line new-cap
-let client = new tmi.client(config)
+let twitchClient = new tmi.client(config)
 
-client.connect()
+twitchClient.connect()
 
-let server = http.createServer(function (request, response) {
-  // process HTTP request. Since we're writing just WebSockets server
-  // we don't have to implement anything.
-})
-server.listen(config.serverPort, function () {
-})
+io.on('connection', (socket) => {
+  socket.on('admin-connected', () => {
+    webSockets.admin = socket.id
+    gameState.adminConnected = true
+    io.sockets.emit('gameStateUpdate', gameState)
+  })
 
-// create the server
-const wsServer = new WebSocketServer({
-  httpServer: server
-})
+  socket.on('character-selection-connected', () => {
+    webSockets.char = socket.id
+    gameState.characterSelectionConnected = true
+    socket.emit('load-characters', gameState)
+    io.sockets.emit('gameStateUpdate', gameState)
+  })
 
-// WebSocket server
-wsServer.on('request', function (request) {
-  let connection = request.accept(null, request.origin)
+  socket.on('overlay-connected', ()=>{
+    webSockets.overlay = socket.id
+    gameState.overlayConnected = true
+    io.sockets.emit('gameStateUpdate', gameState)
+  })
 
-  // This is the most important callback for us, we'll handle
-  // all messages from users here.
-  connection.on('message', function (message) {
-    if (message.type === 'utf8') {
-      if (message.utf8Data === 'animation') {
-        gameState.overlay_connected = true
-        webSockets.animation = connection// store websocket for animation
-        if (webSockets.admin) {
-          webSockets.admin.send(JSON.stringify(gameState))
-        }
+  socket.on('disconnect', () => {
+    if (webSockets.char === socket.id) {
+      gameState.characterSelectionConnected = false
+    }
+    if (webSockets.admin === socket.id) {
+      gameState.adminConnected = false
+    }
+    if (webSockets.overlay === socket.id) {
+      gameState.overlayConnected = false
+    }
+    io.sockets.emit('gameStateUpdate', gameState)
+  })
 
-        if (gameState.overlay_connected === true && gameState.players.length >= 4) {
-          sendAnimationGameStateUpdate()
-        }
-        console.log('OVERLAY CONNECTED!')
-      }
+  socket.on('generate-game', () => {
+      generateNewGame()
+  })
 
-      if (message.utf8Data === 'animation-close') {
-        gameState.overlay_connected = false
-        if (webSockets.admin) {
-          webSockets.admin.send(JSON.stringify(gameState))
-        }
-        webSockets.animation = null
-      }
+  socket.on('start-game', () => {
+    gameState.inProgress = true
+    gameState.canEnter = false
+    twitchClient.action(config.channels[0], 'Game has begun! Only !random will join, !team to check.')
+    io.sockets.emit('gameStateUpdate', gameState)
 
-      if (message.utf8Data === 'admin') {
-        gameState.admin_connected = true
-        webSockets.admin = connection// store websocket for admin
-        webSockets.admin.send(JSON.stringify(gameState))
-        console.log('ADMIN CONNECTED!')
+  })
 
-        // If the character connected socket is connected and are characters are populated update the char select screen
-        if (gameState.char_connected === true && gameState.players.length >= 4) {
-          sendCharacterGameStateUpdate()
-        }
+  socket.on('kill-player', (playerId) => {
+    console.log(playerId)
+    switch(playerId){
+      case 1:
+        killPlayer(0)
+        break
+      case 2:
+        killPlayer(1)
+        break
+      case 3:
+        killPlayer(2)
+        break
+      case 4:
+        killPlayer(3)
+        break
+    }
 
-        if (gameState.overlay_connected === true && gameState.players.length >= 4) {
-          sendAnimationGameStateUpdate()
-        }
-      }
+  })
 
-      if (message.utf8Data === 'admin-close') {
-        gameState.admin_connected = false
-        webSockets.admin = null
-      }
-
-      if (message.utf8Data === 'char') {
-        gameState.char_connected = true
-        webSockets.char = connection// store websocket for admin
-        sendCharacterInit()
-
-        /* send a "game start" message in [4] of char select screen */
-        sendCharacterGameStateUpdate()
-
-        // Send update to admin so we can see it connected visually
-        if (webSockets.admin) {
-          webSockets.admin.send(JSON.stringify(gameState))
-        }
-        console.log('CHARACTER SELECT CONNECTED')
-      }
-
-      if (message.utf8Data === 'char-close') {
-        gameState.char_connected = false
-        webSockets.char = null
-        if (webSockets.admin) {
-          webSockets.admin.send(JSON.stringify(gameState))
-        }
-      }
-
-      if (message.utf8Data === 'generate') {
-        if (gameState.overlay_connected === false) {
-          gameState.error = 'Overlay is not connected'
-          webSockets.admin.send(JSON.stringify(gameState))
-        } else if (gameState.char_connected === false) {
-          gameState.error = 'Character selection is not connected'
-          webSockets.admin.send(JSON.stringify(gameState))
-        } else {
-          gameState.error = null
-          generateNewGame()
-        }
-      }
-
-      if (message.utf8Data === 'start') {
-        // close entry to the game
-        gameState.in_progress = true
-        gameState.canEnter = false
-
-        webSockets.admin.send(JSON.stringify(gameState))
-
-        client.action(config.channels[0], 'Game has begun! Only !random will join, !team to check.')
-      } else {
-        // choose a player to kill
-        if (gameState.suddenDeath === -1) {
-          switch (message.utf8Data) {
-            case '1':
-              killPlayer(0)
-              break
-            case '2':
-              killPlayer(1)
-              break
-            case '3':
-              killPlayer(2)
-              break
-            case '4':
-              killPlayer(3)
-              break
-          }
-        } else if (gameState.suddenDeath === 1) {
-          switch (message.utf8Data) {
-            case '1':
-              suddenDeathWinner(0)
-              break
-            case '2':
-              suddenDeathWinner(1)
-              break
-            case '3':
-              suddenDeathWinner(2)
-              break
-            case '4':
-              suddenDeathWinner(3)
-              break
-          }
-        }
-      }
+  socket.on('suddenDeathWinner', (playerId) => {
+    switch (playerId) {
+      case 1:
+        suddenDeathWinner(0)
+        break
+      case 2:
+        suddenDeathWinner(1)
+        break
+      case 3:
+        suddenDeathWinner(2)
+        break
+      case 4:
+        suddenDeathWinner(3)
+        break
     }
   })
+
 })
 
 // selecting characters for the game
@@ -250,73 +203,21 @@ function generateNewGame () {
     gameState.gameID = gameId
     gameState.generated = true
     gameState.canEnter = true
-
-    webSockets.admin.send(JSON.stringify(gameState))
-
-    sendAnimationGameStateUpdate()
-
-    sendCharacterGameStateUpdate()
+    io.sockets.emit('gameStateUpdate', gameState)
   })
 }
 
-function sendCharacterGameEnd () {
-  if (!webSockets.char) return
-  webSockets.char.send(JSON.stringify({
-    type: 'gameEnd',
-    gameState: gameState
-  }))
-}
-
-function sendCharacterGameStateUpdate () {
-  if (!webSockets.char) return
-  webSockets.char.send(JSON.stringify({
-    type: 'gameStateUpdate',
-    gameState: gameState
-  }))
-}
-
-function sendCharacterPlayers () {
-  if (!webSockets.char) return
-  webSockets.char.send(JSON.stringify({
-    type: 'players',
-    gameState: gameState
-  }))
-}
-
-function sendCharacterInit () {
-  if (!webSockets.char) return
-  webSockets.char.send(JSON.stringify({
-    type: 'init',
-    gameState: gameState
-  }))
-}
-
-function sendAnimationKillPlayer () {
-  if (!webSockets.animation) return
-  webSockets.animation.send(JSON.stringify({
-    type: 'killPlayer',
-    gameState: gameState
-  }))
-}
 
 function sendAnimationSuddenDeath () {
-  if (!webSockets.animation) return
-  webSockets.animation.send(JSON.stringify({
+  if (!webSockets.overlay) return
+  webSockets.overlay.send(JSON.stringify({
     type: 'suddenDeath',
     gameState: gameState
   }))
 }
 
-function sendAnimationGameStateUpdate () {
-  if (!webSockets.animation) return
-  webSockets.animation.send(JSON.stringify({
-    type: 'gameStateUpdate',
-    gameState: gameState
-  }))
-}
-
 function sendAnimationGameEnd () {
-  webSockets.animation.send(JSON.stringify({
+  webSockets.overlay.send(JSON.stringify({
     type: 'gameEnd',
     gameState: gameState
   }))
@@ -360,11 +261,10 @@ function killPlayer (safe) {
 
   db.addKill(gameState)
 
-
-
   if (!isOver()) {
+    io.to(webSockets.overlay).emit('kill-player', gameState)
     // If the game is not over show the kill player animation
-    sendAnimationKillPlayer()
+    // sendAnimationKillPlayer()
   } else {
     gameOver()
   }
@@ -375,7 +275,7 @@ function gameOver () {
   if (gameState.winners.length === 1) {
     // 1 winner means no sudden death
     // unlock = Unlockables(winners[0])
-    payout(gameState.winners[0], 0, '', gameState.gameID)
+    payout(gameState.winners[0], 0)
     gameState.winningTargetIndex = gameState.winners[0].pos
     endGame()
   } else if (gameState.winners.length === 2) {
@@ -387,8 +287,8 @@ function gameOver () {
     sendAnimationSuddenDeath()
 
     // send message to twitch chat about the rules
-    client.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
-    client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
+    twitchClient.action(config.channels[0], 'Sudden Death mode:' + suddenDeath[gameState.suddenDeath])
+    twitchClient.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
 
     webSockets.admin.send(JSON.stringify(gameState))
   }
@@ -405,7 +305,7 @@ function gameOver () {
 
 function suddenDeathWinner (winner) {
   // let unlock = Unlockables(players[winner])
-  payout(gameState.players[winner], (gameState.players[winner].team.length * 10), 'SUDDEN DEATH VICTORY!', gameState.gameID)
+  payout(gameState.players[winner], (gameState.players[winner].team.length * 10))
 
   // Increment thw inners kill count
   gameState.players[winner].kills += 1
@@ -420,9 +320,7 @@ function endGame () {
   // Update the state and send it to the client
   resetGameState()
 
-  webSockets.admin.send(JSON.stringify(gameState))
-  // Update the character selection screen
-  sendCharacterGameEnd()
+  io.sockets.emit('gameStateUpdate', gameState)
 }
 
 function resetGameState () {
@@ -432,7 +330,7 @@ function resetGameState () {
   gameState.safeTargetIndex = -1
   gameState.killTargetIndex = -1
   gameState.winningTargetIndex = -1
-  gameState.in_progress = false
+  gameState.inProgress = false
   gameState.generated = false
   gameState.canEnter = false
   gameState.ready = false
@@ -473,25 +371,25 @@ function isOver () {
   return aliveCount === 1
 }
 
-function checkUnlocks (winningTargetIndex) {
-  let winner = gameState.winners[winningTargetIndex]
-  let activePlayers = []
-  for (let i = 0; i < gameState.players.length; i++) {
-    activePlayers.push(gameState.players[i].character.name)
-  }
-
-  if (winner.name === characters.ZELDA) {
-    // unlock ZELDA
-  } else if (winner.name === characters.SAMUS) {
-    // unlock ZERO SUIT
-  } else if (winner.name === characters.GAME_AND_WATCH) {
-    // unlock wii fit trainer
-  } else if (winner.name === characters.MARTH && winner.score >= 5) {
-    // unlock lucina
-  } else if (activePlayers.includes(characters.MARIO) && activePlayers.includes(characters.LUIGI) && activePlayers.includes(characters.YOSHI)) {
-    // unlock rosalina
-  }
-}
+// function checkUnlocks (winningTargetIndex) {
+//   let winner = gameState.winners[winningTargetIndex]
+//   let activePlayers = []
+//   for (let i = 0; i < gameState.players.length; i++) {
+//     activePlayers.push(gameState.players[i].character.name)
+//   }
+//
+//   if (winner.name === characters.ZELDA) {
+//     // unlock ZELDA
+//   } else if (winner.name === characters.SAMUS) {
+//     // unlock ZERO SUIT
+//   } else if (winner.name === characters.GAME_AND_WATCH) {
+//     // unlock wii fit trainer
+//   } else if (winner.name === characters.MARTH && winner.score >= 5) {
+//     // unlock lucina
+//   } else if (activePlayers.includes(characters.MARIO) && activePlayers.includes(characters.LUIGI) && activePlayers.includes(characters.YOSHI)) {
+//     // unlock rosalina
+//   }
+// }
 
 // }
 
@@ -504,7 +402,7 @@ function checkUnlocks (winningTargetIndex) {
 //   return unlock
 // }
 
-function payout (winner, bonus, message, GID) {
+function payout (winner, bonus) {
   // calculate pay
   let pay = calcPay(winner)
   // if pay, for some reason is NaN, set it to 0
@@ -518,12 +416,12 @@ function payout (winner, bonus, message, GID) {
   // if (bonus>0){ message= message + "Bonus Sheckels earned: " + bonus}
   db.recordStats(gameState, pay, gameState.gameID)
   if (winner.team.length > 0) {
-    client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
+    twitchClient.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
     setTimeout(function () {
-      client.action(config.channels[0], winner.team[getRandomInt(0, winner.team.length - 1)])
+      twitchClient.action(config.channels[0], winner.team[getRandomInt(0, winner.team.length - 1)])
     }, 2000)
   } else {
-    client.action(config.channels[0], 'Team [' + winner.fullName + '] has won! Unfortunately there were no players on this team. ')
+    twitchClient.action(config.channels[0], 'Team [' + winner.fullName + '] has won! Unfortunately there were no players on this team. ')
   }
 }
 
@@ -548,9 +446,9 @@ function findTeam (username) {
 }
 
 // twitch message interface
-client.on('chat', function (channel, user, message, self) {
+twitchClient.on('chat', function (channel, user, message) {
   if (message.toLowerCase() === '!replace 03b9-0000-0297-aa32') {
-    client.timeout(config.channels[0], user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')
+    twitchClient.timeout(config.channels[0], user['username'], 86400, 'THIS LEVEL IS BANNED DON\'T YOU HECKIN\' DARE')
   }
 
   // game not generated just return
@@ -559,7 +457,7 @@ client.on('chat', function (channel, user, message, self) {
   // sudden death command
   if (gameState.suddenDeath === 1) {
     if (message.toLowerCase() === '!' + suddenDeath[gameState.suddenDeath].toLowerCase().replace(' ', '')) {
-      client.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
+      twitchClient.action(config.channels[0], suddenDeathDescriptions[gameState.suddenDeath])
     }
   }
 
@@ -567,7 +465,7 @@ client.on('chat', function (channel, user, message, self) {
   if (message.toLowerCase() === '!team') {
     let team = findTeam(user['username'])
     if (team) {
-      client.action(config.channels[0], team)
+      twitchClient.action(config.channels[0], team)
     }
   }
 
@@ -577,14 +475,14 @@ client.on('chat', function (channel, user, message, self) {
       gameState.entries.push(user['username'])
       let randTeam = getRandomInt(0, 3)
       gameState.players[randTeam].team.push(user['username'])
-      client.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
+      twitchClient.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
       db.storeUser(user['username'], gameState, randTeam)
       db.addEntry(gameState, user['username'], randTeam)
-      sendCharacterPlayers()
+      io.sockets.emit('gameStateUpdate', gameState)
       return
     } else {
       let team = findTeam(user['username'])
-      client.action(config.channels[0], 'Already on a team! ' + team)
+      twitchClient.action(config.channels[0], 'Already on a team! ' + team)
       return
     }
   }
@@ -593,7 +491,7 @@ client.on('chat', function (channel, user, message, self) {
     // Can't enter show this message
     if (!gameState.canEnter) {
       if (gameState.entries.indexOf(user['username']) === -1) {
-        client.action(config.channels[0], 'Entries are closed! !random to join a team')
+        twitchClient.action(config.channels[0], 'Entries are closed! !random to join a team')
         return
       }
     } else {
@@ -605,13 +503,13 @@ client.on('chat', function (channel, user, message, self) {
         if (gameState.entries.includes(user.username) === false) {
           gameState.entries.push(user.username)
           gameState.players[i].team.push(user.username)
-          client.action(config.channels[0], user.username + ' joined team ' + gameState.players[i].fullName + '!')
+          twitchClient.action(config.channels[0], user.username + ' joined team ' + gameState.players[i].fullName + '!')
           db.storeUser(user.username, gameState, i)
           db.addEntry(gameState, user.username, i)
-          sendCharacterPlayers()
+          io.sockets.emit('gameStateUpdate', gameState)
         } else {
           let team = findTeam(user.username)
-          client.action(config.channels[0], 'Already on a team! ' + team)
+          twitchClient.action(config.channels[0], 'Already on a team! ' + team)
         }
       }
     }

@@ -126,50 +126,49 @@ let unlockableCharacters = [
   // MEGA_MAN
 ]
 
-// note roster displays in reverse order
 let roster = [
-  MII,
-
-  NESS,
-
-  SQUIRTLE,
-  PIKACHU,
-  JIGGILY_PUFF,
-
-  SONIC,
-
-  KING_DE_DE_DE,
-  KIRBY,
-
-  FOX,
-
-  CAPTAIN_FALCON,
-
-  LUCINA,
-  IKE,
-  MARTH,
-
-  WII_FIT_TRAINER,
-
-  GAME_AND_WATCH,
-
-  PALUTENA,
-  PIT,
-
-  SHEIK,
-  ZELDA,
-  LINK,
-
-  SAMUS_ZERO,
-  SAMUS,
+  MARIO,
+  LUIGI,
+  YOSHI,
+  PEACH,
+  ROSALINA,
 
   DK,
 
-  ROSALINA,
-  PEACH,
-  YOSHI,
-  LUIGI,
-  MARIO
+  SAMUS,
+  SAMUS_ZERO,
+
+  LINK,
+  ZELDA,
+  SHEIK,
+
+  PIT,
+  PALUTENA,
+
+  GAME_AND_WATCH,
+
+  WII_FIT_TRAINER,
+
+  MARTH,
+  IKE,
+  LUCINA,
+
+  CAPTAIN_FALCON,
+
+  FOX,
+
+  KIRBY,
+  KING_DE_DE_DE,
+
+  SONIC,
+
+  JIGGILY_PUFF,
+  PIKACHU,
+  SQUIRTLE,
+
+  NESS,
+
+  MII
 
 ]
 

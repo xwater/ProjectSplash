@@ -1,0 +1,124 @@
+<html>
+<head>
+    <link rel="stylesheet" href="../assets/css/character.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js" integrity="sha256-ji09tECORKvr8xB9iCl8DJ8iNMLriDchC1+p+yt1hSs=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+    <title>Splash Bros - Character Selection</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/favicon/site.webmanifest">
+    <link rel="mask-icon" href="./assets/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+<div id="characterSelect">
+    <div id="character-grid">
+            <img v-for="URL in charactersUrls" :src="URL"/>
+    </div>
+    <table id="pgrid">
+        <tr >
+            <td v-for="player in gameState.players" class="pbox">
+                <div class="char-wrapper">
+                    <div class="charname" id="p1name">{{player.fullName}}</div>
+                    <div class="charimage"><img :src="getRandomRosterPortrait(player)"></div>
+                    <div class="teamcount"><p>Team Size:</p>
+                        <p id="p3team">{{player.team.length}}</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>
+
+
+<script type="text/javascript">
+
+
+  let app = new Vue({
+    el: '#characterSelect',
+    data () {
+      return {
+        socket: null,
+        socketInit: false,
+        socketError: null,
+        gameState: {},
+        charactersUrls: []
+      }
+    },
+    methods: {
+      connect () {
+        if (!this.socketInit) {
+          this.socket = io.connect('ws://localhost:3000', {
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: Infinity
+          })
+          this.socketInit = true
+
+          this.socket.on('connect', () => {
+            this.socket.emit('character-selection-connected', {})
+          })
+
+          this.socket.on('reconnect', (attemptNumber) => {
+            this.socket.emit('character-selection-connected', {})
+          })
+
+          this.socket.on('disconnect', () => {
+            this.socket.disconnect()
+            setTimeout(() => {
+              this.connect()
+            }, 5000)
+          })
+        }
+        else {
+          this.socket.io.reconnect()
+        }
+      },
+
+      getRandomInt (min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min
+      },
+
+      loadCharacters () {
+        this.charactersUrls = []
+        let basePath = './assets/icons/select-icons/'
+        for (let character in this.gameState.charPool) {
+          if (this.gameState.charPool[character].unlocked === true) {
+            this.charactersUrls.push(basePath + character + '.png')
+          }
+          else {
+            this.charactersUrls.push(basePath + 'hidden.png')
+          }
+        }
+      },
+
+      getRandomRosterPortrait(player){
+        let randomNumber = this.getRandomInt(0, 7);
+        return player.character.portraits.rosterPortraits[randomNumber]
+      },
+
+    },
+    mounted () {
+      this.connect()
+
+      this.socket.on('load-characters', gameState => {
+        this.gameState = gameState
+        this.loadCharacters()
+      })
+
+      this.socket.on('gameStateUpdate', gameState => {
+        this.gameState = gameState
+      })
+
+    },
+  })
+
+</script>

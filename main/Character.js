@@ -21,6 +21,16 @@ module.exports =
         challenger: './assets/gifs/misc/challenger.gif'
       }
 
+      this.icons = {
+        liveIcon: './assets/icons/lives/' + this.name + 'L.png'
+      }
+
+      this.portraits = {
+        livePortrait: './assets/icons/live-portraits/' + this.name + '.png',
+        rosterPortraits: []
+
+      }
+
       this.videos = {
         victory: './assets/gifs/victory/' + this.name + '/' + this.name + '.mp4'
       }
@@ -28,6 +38,7 @@ module.exports =
       this.initTaunts()
       this.initChimes()
       this.initWinGifs()
+      this.initRosterPortraits()
     }
 
     initTaunts () {
@@ -39,6 +50,12 @@ module.exports =
     initChimes () {
       for (let i = 1; i < 2; i++) {
         this.sfx.chimes.push('./assets/sfx/' + this.name + '/chime/' + this.name + i)
+      }
+    }
+
+    initRosterPortraits () {
+      for (let i = 1; i < 9; i++) {
+        this.portraits.rosterPortraits.push('./assets/icons/portraits/' + this.name + '/' + this.name + i + '.png')
       }
     }
 
