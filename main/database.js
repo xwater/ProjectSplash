@@ -177,6 +177,16 @@ exports.addEntry = (gameState, username, randTeam) => {
   })
 }
 
+exports.deleteEntry = (gameState, username) => {
+  db.serialize(() => {
+    db.run('DELETE FROM Entries WHERE game_id = ? AND user = ?',
+      [
+        gameState.gameID,
+        username,
+      ])
+  })
+}
+
 exports.getUnlockedCharacters = () => {
   return new Promise(resolve => {
     db.serialize(() => {
