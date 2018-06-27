@@ -11,8 +11,7 @@ const server = app.listen(config.serverPort, function () {
 
 app.use(express.static('public'))
 
-const io = socket(server, {
-})
+const io = socket(server, {})
 
 const tmi = require('tmi.js')
 
@@ -70,6 +69,7 @@ let twitchClient = new tmi.client(config)
 twitchClient.connect()
 
 io.on('connection', (socket) => {
+
   socket.on('admin-connected', () => {
     webSockets.admin = socket.id
     gameState.adminConnected = true
@@ -83,7 +83,7 @@ io.on('connection', (socket) => {
     io.sockets.emit('gameStateUpdate', gameState)
   })
 
-  socket.on('overlay-connected', ()=>{
+  socket.on('overlay-connected', () => {
     webSockets.overlay = socket.id
     gameState.overlayConnected = true
     io.sockets.emit('gameStateUpdate', gameState)
@@ -103,7 +103,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('generate-game', () => {
-      generateNewGame()
+    generateNewGame()
   })
 
   socket.on('start-game', () => {
@@ -115,7 +115,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('kill-player', (playerId) => {
-    switch(playerId){
+    switch (playerId) {
       case 1:
         killPlayer(0)
         break
@@ -151,7 +151,29 @@ io.on('connection', (socket) => {
 
 })
 
-// selecting characters for the game
+function findTeam (username) {
+  if (gameState.entries.includes(username)) {
+    for (let i = 0; i < 4; i++) {
+      if (gameState.players[i].team.includes(username)) {
+        return i
+      }
+    }
+  }
+  return -1
+}
+
+function leaveTeam (username) {
+  let teamIndex = findTeam(username)
+  if (teamIndex === -1) {
+    return -1
+  }
+
+  gameState.players[teamIndex].team = gameState.players[teamIndex].team.filter(e => e !== username)
+  db.deleteEntry(gameState, username)
+  return teamIndex
+
+}
+
 function chooseRoster () {
   gameState.roster = []
   while (gameState.roster.length < 4) {
@@ -175,7 +197,6 @@ function chooseRoster () {
   }
 }
 
-// random int function
 function getRandomInt (min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -278,8 +299,6 @@ function gameOver () {
 // }
 }
 
-// if (unlock) { msg[7] = unlock }
-
 function suddenDeathWinner (winner) {
   // let unlock = Unlockables(players[winner])
   payout(gameState.players[winner], (gameState.players[winner].team.length * 10))
@@ -348,37 +367,6 @@ function isOver () {
   return aliveCount === 1
 }
 
-// function checkUnlocks (winningTargetIndex) {
-//   let winner = gameState.winners[winningTargetIndex]
-//   let activePlayers = []
-//   for (let i = 0; i < gameState.players.length; i++) {
-//     activePlayers.push(gameState.players[i].character.name)
-//   }
-//
-//   if (winner.name === characters.ZELDA) {
-//     // unlock ZELDA
-//   } else if (winner.name === characters.SAMUS) {
-//     // unlock ZERO SUIT
-//   } else if (winner.name === characters.GAME_AND_WATCH) {
-//     // unlock wii fit trainer
-//   } else if (winner.name === characters.MARTH && winner.score >= 5) {
-//     // unlock lucina
-//   } else if (activePlayers.includes(characters.MARIO) && activePlayers.includes(characters.LUIGI) && activePlayers.includes(characters.YOSHI)) {
-//     // unlock rosalina
-//   }
-// }
-
-// }
-
-// function unlockChar (unlock) {
-//   charPool.push(unlock)
-//   jsonfile.writeFileSync('./characters.txt', charPool)
-//   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
-//   var unlockAni = {'challenger': unlock}
-//   webSockets.animation.sendUTF(JSON.stringify(unlockAni))
-//   return unlock
-// }
-
 function payout (winner, bonus) {
   // calculate pay
   let pay = calcPay(winner)
@@ -412,15 +400,65 @@ function calcPay (winners) {
   return pay
 }
 
-function findTeam (username) {
-  if (gameState.entries.indexOf(username) !== -1) {
-    for (let i = 0; i < 4; i++) {
-      if (gameState.players[i].team.indexOf(username) !== -1) {
-        return username + ' is on team ' + gameState.players[i].fullName + '!'
+function checkUnlocks (winningTargetIndex) {
+  let winner = gameState.winners[winningTargetIndex]
+  let activePlayers = []
+  for (let i = 0; i < gameState.players.length; i++) {
+    activePlayers.push(gameState.players[i].character.name)
+  }
+
+  if (winner.name === characters.ZELDA) {
+    // unlock ZELDA
+  } else if (winner.name === characters.SAMUS) {
+    // unlock ZERO SUIT
+  } else if (winner.name === characters.GAME_AND_WATCH) {
+    // unlock wii fit trainer
+  } else if (winner.name === characters.MARTH && winner.score >= 5) {
+    // unlock lucina
+  } else if (activePlayers.includes(characters.MARIO) && activePlayers.includes(characters.LUIGI) && activePlayers.includes(characters.YOSHI)) {
+    // unlock rosalina
+  }
+}
+
+function checkPlayerAliases (message, username) {
+  // Entries are close user can only random at this point
+  if (!gameState.canEnter) {
+    if (!gameState.entries.includes(username)) {
+      twitchClient.action(config.channels[0], 'Entries are closed! !random to join a team')
+    }
+    return
+  }
+
+  for (let i = 0; i < 4; i++) {
+    // The user can enter
+    let aliases = gameState.charPool[gameState.players[i].character.name].aliases
+    let characterName = gameState.players[i].character.name
+
+    if (message.toLowerCase() === ('!' + characterName) || aliases.includes(message)) {
+      let teamIndex = findTeam(username)
+      // If the user is not on a team
+      if (teamIndex === -1) {
+        gameState.entries.push(username)
+        gameState.players[i].team.push(username)
+        twitchClient.action(config.channels[0], username + ' joined team ' + gameState.players[i].fullName + '!')
+        db.storeUser(username, gameState, i)
+        db.addEntry(gameState, username, i)
+        io.sockets.emit('gameStateUpdate', gameState)
+      } else {
+        twitchClient.action(config.channels[0], 'Already on a team! ' + gameState.players[teamIndex].fullName)
       }
     }
   }
 }
+
+// function unlockChar (unlock) {
+//   charPool.push(unlock)
+//   jsonfile.writeFileSync('./characters.txt', charPool)
+//   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
+//   var unlockAni = {'challenger': unlock}
+//   webSockets.animation.sendUTF(JSON.stringify(unlockAni))
+//   return unlock
+// }
 
 // twitch message interface
 twitchClient.on('chat', function (channel, user, message) {
@@ -440,55 +478,46 @@ twitchClient.on('chat', function (channel, user, message) {
 
   // Show current team
   if (message.toLowerCase() === '!team') {
-    let team = findTeam(user['username'])
-    if (team) {
-      twitchClient.action(config.channels[0], team)
+    let teamIndex = findTeam(user.username)
+    if (teamIndex !== -1) {
+      let msg = user.username + ' is on team ' + gameState.players[teamIndex].fullName + '!'
+      twitchClient.action(config.channels[0], msg)
+    }
+  }
+
+  // Leave your current team
+  if (message.toLowerCase() === '!leave') {
+    if (!gameState.canEnter) {
+      twitchClient.action(config.channels[0], 'Entries are closed! You can no longer leave a team')
+      return
+    }
+    let teamIndex = findTeam(user.username)
+    if (teamIndex !== -1) {
+      let leftTeamIndex = leaveTeam(user.username)
+      let msg = user.username + ' you have left team ' + gameState.players[leftTeamIndex].fullName + '!'
+      twitchClient.action(config.channels[0], msg)
+      io.sockets.emit('gameStateUpdate', gameState)
     }
   }
 
   // Join random team
   if (message.toLowerCase() === '!random') {
-    if (gameState.entries.indexOf(user['username']) === -1) {
-      gameState.entries.push(user['username'])
+    let teamIndex = findTeam(user.username)
+    if (teamIndex === -1) {
+      gameState.entries.push(user.username)
       let randTeam = getRandomInt(0, 3)
-      gameState.players[randTeam].team.push(user['username'])
-      twitchClient.action(config.channels[0], user['username'] + ' joined team ' + gameState.players[randTeam].fullName + '!')
-      db.storeUser(user['username'], gameState, randTeam)
-      db.addEntry(gameState, user['username'], randTeam)
+      gameState.players[randTeam].team.push(user.username)
+      twitchClient.action(config.channels[0], user.username + ' joined team ' + gameState.players[randTeam].fullName + '!')
+      db.storeUser(user.username, gameState, randTeam)
+      db.addEntry(gameState, user.username, randTeam)
       io.sockets.emit('gameStateUpdate', gameState)
       return
     } else {
-      let team = findTeam(user['username'])
-      twitchClient.action(config.channels[0], 'Already on a team! ' + team)
+      twitchClient.action(config.channels[0], 'Already on a team! ' + gameState.players[teamIndex].fullName)
       return
     }
   }
 
-  for (let i = 0; i < 4; i++) {
-    // Can't enter show this message
-    if (!gameState.canEnter) {
-      if (gameState.entries.indexOf(user['username']) === -1) {
-        twitchClient.action(config.channels[0], 'Entries are closed! !random to join a team')
-        return
-      }
-    } else {
-      // The user can enter
-      let aliases = gameState.charPool[gameState.players[i].character.name].aliases
-      let characterName = gameState.players[i].character.name
-      if (message.toLowerCase() === ('!' + characterName) || aliases.includes(message)) {
-        // If the user is not on a team
-        if (gameState.entries.includes(user.username) === false) {
-          gameState.entries.push(user.username)
-          gameState.players[i].team.push(user.username)
-          twitchClient.action(config.channels[0], user.username + ' joined team ' + gameState.players[i].fullName + '!')
-          db.storeUser(user.username, gameState, i)
-          db.addEntry(gameState, user.username, i)
-          io.sockets.emit('gameStateUpdate', gameState)
-        } else {
-          let team = findTeam(user.username)
-          twitchClient.action(config.channels[0], 'Already on a team! ' + team)
-        }
-      }
-    }
-  }
+  checkPlayerAliases(message, user.username)
+
 })
