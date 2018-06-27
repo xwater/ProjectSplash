@@ -135,23 +135,27 @@
 
       // plays audio, arg is path of sound to play.  if multiple files, will play sequentially
       playAudio (args) {
-        // console.log(args)
-        let audio = []
-        // build sequential sounds to play
-        for (let i = 0; i < args.length; ++i) {
-          audio[i] = new Howl({
-            src: [args[i]],
-            format: ['ogg', 'wav', 'mp3'],
-            volume: 0.5,
-            onend: function () {
-              if (audio[i - 1]) {
-                audio[i - 1].play()
-              }
-            }
-          })
-        }
+        return new Promise(resolve => {
 
-        audio[args.length - 1].play()
+          let audio = []
+          // build sequential sounds to play
+          for (let i = 0; i < args.length; ++i) {
+            audio[i] = new Howl({
+              src: [args[i]],
+              format: ['ogg', 'wav', 'mp3'],
+              volume: 0.5,
+              onend: function () {
+                if (audio[i - 1]) {
+                  audio[i - 1].play()
+                }
+                else{
+                  resolve()
+                }
+              }
+            })
+          }
+          audio[args.length - 1].play()
+        })
       },
 
       killPlayer () {
@@ -169,17 +173,15 @@
         this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
         this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
 
-        setTimeout(() => {
+        this.playAudio(audioToPlay).then(()=>{
           this.showWinLoseAnimation = false
-        }, 1000 * 8)
-
-        this.playAudio(audioToPlay)
+        })
 
         this.animateLifeContainer()
       },
 
       animateLifeContainer () {
-        let shakeTarget = this.gameState.safeTargetIndex
+        let shakeTarget = this.gameState.killTargetIndex
         switch (shakeTarget) {
           case 0:
             this.shake1 = true
@@ -213,27 +215,22 @@
         let players = this.gameState.players
 
         let roundWinnerAudio = [
+          players[this.gameState.safeTargetIndex].character.sfx.suddenDeath,
           players[this.gameState.safeTargetIndex].character.sfx.taunts[this.getRandomInt(0, 4)],
-          players[this.gameState.safeTargetIndex].character.sfx.chimes[0]
+          players[this.gameState.safeTargetIndex].character.sfx.chimes[0],
         ]
-
-        this.playAudio(roundWinnerAudio)
 
         this.showWinLoseAnimation = true
 
         this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
         this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
 
-        setTimeout(() => {
+        this.playAudio(roundWinnerAudio).then(()=>{
           this.showWinLoseAnimation = false
-        }, 1000 * 8)
+        })
 
         this.animateLifeContainer()
 
-        setTimeout(() => {
-          let suddenDeathAudio = [players[this.gameState.safeTargetIndex].character.sfx.suddenDeath]
-          this.playAudio(suddenDeathAudio)
-        }, 1000 * 11)
       },
 
       gameOver () {
@@ -243,16 +240,14 @@
 
         this.videoURL = winner.character.videos.victory
 
-        setTimeout(()=>{
-          this.showVideo = false;
-        },7600)
-
         let audioToPlay = [
           winner.character.sfx.announcer,
           winner.character.sfx.winner,
           winner.character.sfx.chimes[0]
         ]
-        this.playAudio(audioToPlay)
+        this.playAudio(audioToPlay).then(()=>{
+          this.showVideo = false
+        })
       }
 
     },
@@ -272,7 +267,7 @@
         this.gameState = gameState
         this.suddenDeath()
       })
-      this.socket.on('game-over', gameState =>{
+      this.socket.on('game-over', gameState => {
         this.gameState = gameState
         this.gameOver()
       })
