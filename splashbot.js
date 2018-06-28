@@ -421,23 +421,24 @@ function checkUnlocks (winningTargetIndex) {
 }
 
 function checkPlayerAliases (message, username) {
-  // Entries are close user can only random at this point
-  if (!gameState.canEnter) {
-    if (!gameState.entries.includes(username)) {
-      twitchClient.action(config.channels[0], 'Entries are closed! !random to join a team')
-    }
-    return
-  }
 
   for (let i = 0; i < 4; i++) {
     // The user can enter
-    let aliases = gameState.charPool[gameState.players[i].character.name].aliases
-    let characterName = gameState.players[i].character.name
+    let aliases = gameState.players[i].character.aliases
+    let characterName = gameState.players[i].fullName.toLowerCase()
 
     if (message.toLowerCase() === ('!' + characterName) || aliases.includes(message)) {
+
       let teamIndex = findTeam(username)
       // If the user is not on a team
       if (teamIndex === -1) {
+        // Entries are close user can only random at this point
+        if (!gameState.canEnter) {
+          if (!gameState.entries.includes(username)) {
+            twitchClient.action(config.channels[0], 'Entries are closed! !random to join a team')
+          }
+          return
+        }
         gameState.entries.push(username)
         gameState.players[i].team.push(username)
         twitchClient.action(config.channels[0], username + ' joined team ' + gameState.players[i].fullName + '!')
@@ -488,13 +489,12 @@ twitchClient.on('chat', function (channel, user, message) {
   // Leave your current team
   if (message.toLowerCase() === '!leave') {
     if (!gameState.canEnter) {
-      twitchClient.action(config.channels[0], 'Entries are closed! You can no longer leave a team')
+      twitchClient.action(config.channels[0], 'Entries are closed! You can no longer leave a team.')
       return
     }
-    let teamIndex = findTeam(user.username)
-    if (teamIndex !== -1) {
-      let leftTeamIndex = leaveTeam(user.username)
-      let msg = user.username + ' you have left team ' + gameState.players[leftTeamIndex].fullName + '!'
+    let leaveTeamIndex = leaveTeam(user.username)
+    if (leaveTeamIndex !== -1) {
+      let msg = user.username + ' you have left team ' + gameState.players[leaveTeamIndex].fullName + '!'
       twitchClient.action(config.channels[0], msg)
       io.sockets.emit('gameStateUpdate', gameState)
     }
@@ -518,6 +518,7 @@ twitchClient.on('chat', function (channel, user, message) {
     }
   }
 
+  // check any message for an alias
   checkPlayerAliases(message, user.username)
 
 })

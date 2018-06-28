@@ -159,10 +159,6 @@
         this.suddenDeathPlayer4 = false
       },
 
-      handlePageClose () {
-        this.socket.emit('admin-close')
-      },
-
       connect () {
         if (!this.socketInit) {
           this.socket = io.connect('ws://localhost:3000', {
@@ -200,7 +196,6 @@
       this.connect()
 
       this.socket.on('admin-connected', data => {
-        console.log(data)
         this.gameState = data
       })
 

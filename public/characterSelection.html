@@ -17,11 +17,11 @@
 
 <div id="characterSelect">
     <div id="character-grid">
-            <img v-for="URL in charactersUrls" :src="URL"/>
+        <img v-for="URL in charactersUrls" :src="URL"/>
     </div>
     <table id="pgrid">
-        <tr >
-            <td v-for="player in gameState.players" class="pbox">
+        <tr>
+            <td v-for="(player, index) in gameState.players" class="pbox">
                 <div class="char-wrapper">
                     <div class="charname" id="p1name">{{player.fullName}}</div>
                     <div class="charimage"><img :src="getRandomRosterPortrait(player)"></div>
@@ -49,7 +49,7 @@
         socketInit: false,
         socketError: null,
         gameState: {},
-        charactersUrls: []
+        charactersUrls: [],
       }
     },
     methods: {
@@ -100,8 +100,8 @@
         }
       },
 
-      getRandomRosterPortrait(player){
-        let randomNumber = this.getRandomInt(0, 7);
+      getRandomRosterPortrait (player) {
+        let randomNumber = this.getRandomInt(0, 7)
         return player.character.portraits.rosterPortraits[randomNumber]
       },
 
