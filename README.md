@@ -46,7 +46,7 @@ OR
 node splashbot.js
 ```
 
-Once one of the above commands has been run you should then open up. ```index.html```, ```overlay.html```, and ```char.html``` you should then see some information in the console about the websockets connecting. At this point you should be able to generate a new game.
+Once one of the above commands has been run you should then open up. Open up your browser and head to localhost:3000 or whatever port you defined in your config file. Open Character Selection and Overlay and you should be able to generate a game.
 
 #### How to Join A Team
 
