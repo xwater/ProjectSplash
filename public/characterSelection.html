@@ -23,7 +23,7 @@
         <tr>
             <td v-for="(player, index) in gameState.players" class="pbox">
                 <div class="char-wrapper">
-                    <div class="charname" id="p1name">{{player.fullName}}</div>
+                    <div class="charname" id="p1name">{{player.character.name}}</div>
                     <div class="charimage"><img :src="getRandomRosterPortrait(player)"></div>
                     <div class="teamcount"><p>Team Size:</p>
                         <p id="p3team">{{player.team.length}}</p>
@@ -90,9 +90,9 @@
       loadCharacters () {
         this.charactersUrls = []
         let basePath = './assets/icons/select-icons/'
-        for (let character in this.gameState.charPool) {
-          if (this.gameState.charPool[character].unlocked === true) {
-            this.charactersUrls.push(basePath + character + '.png')
+        for (let character of this.gameState.roster.charPool) {
+          if (character.unlocked === true) {
+            this.charactersUrls.push(basePath + character.name + '.png')
           }
           else {
             this.charactersUrls.push(basePath + 'hidden.png')

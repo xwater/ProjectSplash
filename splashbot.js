@@ -32,9 +32,9 @@ const gameState = {
   killTargetIndex: -1,
   canEnter: false,
   players: [],
-  roster: [],
+  lineup: [],
   entries: [],
-  charPool: [],
+  roster: {},
   winners: []
 }
 
@@ -45,9 +45,11 @@ const webSockets = {
 }
 
 // generate character pools
-let characters = require('./main/roster')
-characters.init().then(characters => {
-  gameState.charPool = characters
+const Roster = require('./main/roster')
+let r =  new Roster();
+r.initCharacters().then(characters => {
+  r.charPool = characters
+  gameState.roster = r;
 })
 
 let suddenDeath = [
@@ -174,26 +176,25 @@ function leaveTeam (username) {
 
 }
 
-function chooseRoster () {
-  gameState.roster = []
-  while (gameState.roster.length < 4) {
-    let randomNumber = getRandomInt(0, (Object.keys(gameState.charPool).length) - 1)
-    let keys = Object.keys(gameState.charPool)
+function chooseLineup () {
+  gameState.lineup = []
+  while (gameState.lineup.length < 4) {
+    let randomNumber = getRandomInt(0, (Object.keys(gameState.roster.charPool).length) - 1)
 
     // Check to make sure we don't have two of the same character
     let characterExists = false
-    for (let i = 0; i < gameState.roster.length; i++) {
-      if (gameState.roster[i] === keys[randomNumber]) {
+    for (let i = 0; i < gameState.lineup.length; i++) {
+      if (gameState.lineup[i] === gameState.roster.charPool[randomNumber]) {
         characterExists = true
       }
     }
     if (characterExists) continue
 
     // make sure the character is unlocked
-    if (gameState.charPool[keys[randomNumber]].unlocked === false) continue
+    if (gameState.roster.charPool[randomNumber].unlocked === false) continue
 
     // add the character if it doesn't exist
-    gameState.roster.push(keys[randomNumber])
+    gameState.lineup.push(gameState.roster.charPool[randomNumber])
   }
 }
 
@@ -203,10 +204,10 @@ function getRandomInt (min, max) {
 
 function generateNewGame () {
   resetGameState()
-  chooseRoster()
+  chooseLineup()
 
   for (let i = 0; i < 4; i++) {
-    gameState.players[i] = new Player(gameState.roster[i], gameState.charPool[gameState.roster[i]], i)
+    gameState.players[i] = new Player(gameState.lineup[i], i)
   }
   // make entry in games table of statsDB
   db.createNewGame(gameState)
@@ -334,7 +335,7 @@ function resetGameState () {
   gameState.canEnter = false
   gameState.players = []
   gameState.entries = []
-  gameState.roster = []
+  gameState.lineup = []
   gameState.winners = []
 }
 
@@ -407,15 +408,15 @@ function checkUnlocks (winningTargetIndex) {
     activePlayers.push(gameState.players[i].character.name)
   }
 
-  if (winner.name === characters.ZELDA) {
+  if (winner.name === gameState.roster.ZELDA) {
     // unlock ZELDA
-  } else if (winner.name === characters.SAMUS) {
+  } else if (winner.name === gameState.roster.SAMUS) {
     // unlock ZERO SUIT
-  } else if (winner.name === characters.GAME_AND_WATCH) {
+  } else if (winner.name === gameState.roster.GAME_AND_WATCH) {
     // unlock wii fit trainer
-  } else if (winner.name === characters.MARTH && winner.score >= 5) {
+  } else if (winner.name === gameState.roster.MARTH && winner.score >= 5) {
     // unlock lucina
-  } else if (activePlayers.includes(characters.MARIO) && activePlayers.includes(characters.LUIGI) && activePlayers.includes(characters.YOSHI)) {
+  } else if (activePlayers.includes(gameState.roster.MARIO) && activePlayers.includes(gameState.roster.LUIGI) && activePlayers.includes(gameState.roster.YOSHI)) {
     // unlock rosalina
   }
 }
@@ -453,8 +454,8 @@ function checkPlayerAliases (message, username) {
 }
 
 // function unlockChar (unlock) {
-//   charPool.push(unlock)
-//   jsonfile.writeFileSync('./characters.txt', charPool)
+//   roster.push(unlock)
+//   jsonfile.writeFileSync('./characters.txt', roster)
 //   client.action(config.channels[0], 'New Challenger Approaching! ' + fs.readFileSync('./assets/names/' + unlock + '.txt', 'utf8') + ' has joined the battle!')
 //   var unlockAni = {'challenger': unlock}
 //   webSockets.animation.sendUTF(JSON.stringify(unlockAni))

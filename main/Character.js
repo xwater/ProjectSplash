@@ -1,8 +1,8 @@
 module.exports =
   class Character {
-    constructor (id, name, unlocked, aliases) {
-      this.id = id
-      this.name = name
+    constructor (rosterCharacter, unlocked, aliases) {
+      this.id = rosterCharacter.value
+      this.name = rosterCharacter.fullName;
       this.unlocked = unlocked
       this.aliases = aliases
       this.sfx = {
