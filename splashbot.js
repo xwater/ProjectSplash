@@ -35,7 +35,8 @@ const gameState = {
   lineup: [],
   entries: [],
   roster: {},
-  winners: []
+  winners: [],
+  unlockedCharacter: null
 }
 
 const webSockets = {
@@ -46,10 +47,10 @@ const webSockets = {
 
 // generate character pools
 const Roster = require('./main/roster')
-let r =  new Roster();
+let r = new Roster()
 r.initCharacters().then(characters => {
   r.charPool = characters
-  gameState.roster = r;
+  gameState.roster = r
 })
 
 let suddenDeath = [
@@ -276,7 +277,9 @@ function gameOver () {
     // unlock = Unlockables(winners[0])
     payout(gameState.winners[0], 0)
     gameState.winningTargetIndex = gameState.winners[0].pos
-    endGame()
+    checkUnlocks().then(()=>{
+      endGame()
+    })
   } else if (gameState.winners.length === 2) {
     // 2 people reamaining is sudden death
 
@@ -308,7 +311,9 @@ function suddenDeathWinner (winner) {
   gameState.players[winner].kills += 1
   gameState.winningTargetIndex = winner
 
-  endGame()
+  checkUnlocks().then(()=>{
+    endGame()
+  })
 }
 
 function endGame () {
@@ -337,6 +342,7 @@ function resetGameState () {
   gameState.entries = []
   gameState.lineup = []
   gameState.winners = []
+  gameState.unlockedCharacter = null
 }
 
 function getWinners () {
@@ -401,24 +407,99 @@ function calcPay (winners) {
   return pay
 }
 
-function checkUnlocks (winningTargetIndex) {
-  let winner = gameState.winners[winningTargetIndex]
+function checkUnlocks () {
+  return new Promise(resolve => {
+  let winner = gameState.winners[0]
   let activePlayers = []
   for (let i = 0; i < gameState.players.length; i++) {
     activePlayers.push(gameState.players[i].character.name)
   }
 
-  if (winner.name === gameState.roster.ZELDA) {
-    // unlock ZELDA
-  } else if (winner.name === gameState.roster.SAMUS) {
-    // unlock ZERO SUIT
-  } else if (winner.name === gameState.roster.GAME_AND_WATCH) {
-    // unlock wii fit trainer
-  } else if (winner.name === gameState.roster.MARTH && winner.score >= 5) {
-    // unlock lucina
-  } else if (activePlayers.includes(gameState.roster.MARIO) && activePlayers.includes(gameState.roster.LUIGI) && activePlayers.includes(gameState.roster.YOSHI)) {
-    // unlock rosalina
+  if (winner.character.name === gameState.roster.ZELDA.fullName) {
+    gameState.roster.charPool.forEach(char => {
+      if (char.name === gameState.roster.SHEIK.fullName) {
+        if (char.unlocked === true) {
+          resolve(false)
+        }
+        db.unlockCharacter(gameState.roster.SHEIK.fullName)
+        char.unlocked = true
+        gameState.unlockedCharacter = char
+        io.to(webSockets.char).emit('load-characters', gameState)
+        resolve(char)
+      }
+    })
+  } else if (winner.character.name === gameState.roster.SAMUS.fullName) {
+    gameState.roster.charPool.forEach(char => {
+      if (char.name === gameState.roster.ZERO_SUIT_SAMUS.fullName) {
+        if (char.unlocked === true) {
+          resolve(false)
+        }
+        db.unlockCharacter(gameState.roster.ZERO_SUIT_SAMUS.fullName)
+        char.unlocked = true
+        gameState.unlockedCharacter = char
+        io.to(webSockets.char).emit('load-characters', gameState)
+        resolve(char)
+      }
+    })
   }
+  else if (winner.character.name === gameState.roster.PIT.fullName) {
+    gameState.roster.charPool.forEach(char => {
+      if (char.name === gameState.roster.PALUTENA.fullName) {
+        if (char.unlocked === true) {
+          resolve(false)
+        }
+        db.unlockCharacter(gameState.roster.PALUTENA.fullName)
+        char.unlocked = true
+        gameState.unlockedCharacter = char
+        io.to(webSockets.char).emit('load-characters', gameState)
+        resolve(char)
+      }
+    })
+  }
+  else if (winner.character.name === gameState.roster.GAME_AND_WATCH.fullName) {
+    gameState.roster.charPool.forEach(char => {
+      if (char.name === gameState.roster.WII_FIT_TRAINER.fullName) {
+        if (char.unlocked === true) {
+          resolve(false)
+        }
+        db.unlockCharacter(gameState.roster.WII_FIT_TRAINER.fullName)
+        char.unlocked = true
+        gameState.unlockedCharacter = char
+        io.to(webSockets.char).emit('load-characters', gameState)
+        resolve(char)
+      }
+    })
+  } else if (winner.character.name === gameState.roster.MARTH.fullName && winner.score >= 5) {
+    gameState.roster.charPool.forEach(char => {
+      if (char.name === gameState.roster.LUCINA.fullName) {
+        if (char.unlocked === true) {
+          resolve(false)
+        }
+        db.unlockCharacter(gameState.roster.LUCINA.fullName)
+        char.unlocked = true
+        gameState.unlockedCharacter = char
+        io.to(webSockets.char).emit('load-characters', gameState)
+        resolve(char)
+      }
+    })
+
+  } else if (activePlayers.includes(gameState.roster.MARIO.fullName) && activePlayers.includes(gameState.roster.LUIGI.fullName) && (activePlayers.includes(gameState.roster.YOSHI.fullName) || activePlayers.includes(gameState.roster.PEACH.fullName))) {
+
+    gameState.roster.charPool.forEach(char => {
+      if (char.name === gameState.roster.ROSALINA.fullName) {
+        if (char.unlocked === true) {
+          resolve(false)
+        }
+        db.unlockCharacter(gameState.roster.ROSALINA.fullName)
+        char.unlocked = true
+        gameState.unlockedCharacter = char
+        io.to(webSockets.char).emit('load-characters', gameState)
+        resolve(char)
+      }
+    })
+  }
+    resolve(false)
+  })
 }
 
 function checkPlayerAliases (message, username) {

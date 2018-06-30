@@ -202,15 +202,11 @@ exports.getUnlockedCharacters = () => {
   })
 }
 
-exports.unlockCharacter = (name, unlocked = true) => {
+exports.unlockCharacter = (name) => {
   db.serialize(() => {
     db.run('BEGIN TRANSACTION')
-    if (unlocked) {
       let timeStamp = createTimestamp()
-      db.run('INSERT OR IGNORE INTO UnlockedCharacters(character_name, date_unlocked) VALUES(?, ?)', name, timeStamp)
-    } else {
-      db.run('INSERT OR IGNORE INTO UnlockedCharacters(character_name, date_unlocked) VALUES(?, ?)', name, null)
-    }
+      db.run('UPDATE UnlockedCharacters SET date_unlocked = ? WHERE character_name = ?', [timeStamp, name])
     db.run('END')
   })
 }

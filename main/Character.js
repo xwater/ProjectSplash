@@ -11,7 +11,8 @@ module.exports =
         chimes: [],
         winner: './assets/sfx/announcer/winner.wav',
         suddenDeath: './assets/sfx/announcer/suddendeath.wav',
-        announcer: './assets/sfx/' + this.name + '/announcer/1.wav'
+        announcer: './assets/sfx/' + this.name + '/announcer/1.wav',
+        challengerApproaching: './assets/sfx/announcer/challenger.ogg'
       }
 
       this.images = {

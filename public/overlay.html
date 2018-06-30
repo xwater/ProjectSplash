@@ -148,7 +148,7 @@
                 if (audio[i - 1]) {
                   audio[i - 1].play()
                 }
-                else{
+                else {
                   resolve()
                 }
               }
@@ -173,7 +173,7 @@
         this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
         this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
 
-        this.playAudio(audioToPlay).then(()=>{
+        this.playAudio(audioToPlay).then(() => {
           this.showWinLoseAnimation = false
         })
 
@@ -225,7 +225,7 @@
         this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
         this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
 
-        this.playAudio(roundWinnerAudio).then(()=>{
+        this.playAudio(roundWinnerAudio).then(() => {
           this.showWinLoseAnimation = false
         })
 
@@ -240,12 +240,21 @@
 
         this.videoURL = winner.character.videos.victory
 
-        let audioToPlay = [
-          winner.character.sfx.announcer,
-          winner.character.sfx.winner,
-          winner.character.sfx.chimes[0]
-        ]
-        this.playAudio(audioToPlay).then(()=>{
+        let audioToPlay = []
+        //last goes first
+        if (this.gameState.unlockedCharacter === null) {
+          audioToPlay.push(winner.character.sfx.announcer)
+          audioToPlay.push(winner.character.sfx.winner)
+          audioToPlay.push(winner.character.sfx.chimes[0])
+        }
+        else {
+          audioToPlay.push(winner.character.sfx.challengerApproaching)
+          audioToPlay.push(winner.character.sfx.announcer)
+          audioToPlay.push(winner.character.sfx.winner)
+          audioToPlay.push(winner.character.sfx.chimes[0])
+        }
+
+        this.playAudio(audioToPlay).then(() => {
           this.showVideo = false
         })
       }
