@@ -382,12 +382,12 @@ function payout (winner, bonus) {
   // if (bonus>0){ message= message + "Bonus Sheckels earned: " + bonus}
   db.recordStats(gameState, pay, gameState.gameID)
   if (winner.team.length > 0) {
-    twitchClient.action(config.channels[0], 'Team [' + winner.fullName + '] has won! The winner of this game\'s sticker giveaway is... ')
+    twitchClient.action(config.channels[0], 'Team [' + winner.character.name + '] has won! The winner of this game\'s sticker giveaway is... ')
     setTimeout(function () {
       twitchClient.action(config.channels[0], winner.team[getRandomInt(0, winner.team.length - 1)])
     }, 2000)
   } else {
-    twitchClient.action(config.channels[0], 'Team [' + winner.fullName + '] has won! Unfortunately there were no players on this team. ')
+    twitchClient.action(config.channels[0], 'Team [' + winner.character.name + '] has won! Unfortunately there were no players on this team. ')
   }
 }
 
@@ -426,7 +426,7 @@ function checkPlayerAliases (message, username) {
   for (let i = 0; i < 4; i++) {
     // The user can enter
     let aliases = gameState.players[i].character.aliases
-    let characterName = gameState.players[i].fullName.toLowerCase()
+    let characterName = gameState.players[i].character.name.toLowerCase()
 
     if (message.toLowerCase() === ('!' + characterName) || aliases.includes(message)) {
 
@@ -442,12 +442,12 @@ function checkPlayerAliases (message, username) {
         }
         gameState.entries.push(username)
         gameState.players[i].team.push(username)
-        twitchClient.action(config.channels[0], username + ' joined team ' + gameState.players[i].fullName + '!')
+        twitchClient.action(config.channels[0], username + ' joined team ' + gameState.players[i].character.name + '!')
         db.storeUser(username, gameState, i)
         db.addEntry(gameState, username, i)
         io.sockets.emit('gameStateUpdate', gameState)
       } else {
-        twitchClient.action(config.channels[0], 'Already on a team! ' + gameState.players[teamIndex].fullName)
+        twitchClient.action(config.channels[0], 'Already on a team! ' + gameState.players[teamIndex].character.name)
       }
     }
   }
@@ -482,7 +482,7 @@ twitchClient.on('chat', function (channel, user, message) {
   if (message.toLowerCase() === '!team') {
     let teamIndex = findTeam(user.username)
     if (teamIndex !== -1) {
-      let msg = user.username + ' is on team ' + gameState.players[teamIndex].fullName + '!'
+      let msg = user.username + ' is on team ' + gameState.players[teamIndex].character.name + '!'
       twitchClient.action(config.channels[0], msg)
     }
   }
@@ -495,7 +495,7 @@ twitchClient.on('chat', function (channel, user, message) {
     }
     let leaveTeamIndex = leaveTeam(user.username)
     if (leaveTeamIndex !== -1) {
-      let msg = user.username + ' you have left team ' + gameState.players[leaveTeamIndex].fullName + '!'
+      let msg = user.username + ' you have left team ' + gameState.players[leaveTeamIndex].character.name + '!'
       twitchClient.action(config.channels[0], msg)
       io.sockets.emit('gameStateUpdate', gameState)
     }
@@ -508,13 +508,13 @@ twitchClient.on('chat', function (channel, user, message) {
       gameState.entries.push(user.username)
       let randTeam = getRandomInt(0, 3)
       gameState.players[randTeam].team.push(user.username)
-      twitchClient.action(config.channels[0], user.username + ' joined team ' + gameState.players[randTeam].fullName + '!')
+      twitchClient.action(config.channels[0], user.username + ' joined team ' + gameState.players[randTeam].character.name + '!')
       db.storeUser(user.username, gameState, randTeam)
       db.addEntry(gameState, user.username, randTeam)
       io.sockets.emit('gameStateUpdate', gameState)
       return
     } else {
-      twitchClient.action(config.channels[0], 'Already on a team! ' + gameState.players[teamIndex].fullName)
+      twitchClient.action(config.channels[0], 'Already on a team! ' + gameState.players[teamIndex].character.name)
       return
     }
   }

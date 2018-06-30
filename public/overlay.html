@@ -44,14 +44,14 @@
         <div class="charbox" v-for="(player, index) in gameState.players">
             <img class="charicon left"
                  :id="`player-` + (index+1)+ `-portrait`"
-                 :src="player.character.portraits.livePortrait"
+                 :src="player.character.images.livePortrait"
                  :class="{shakeIt: shake(index)}">
             <div class="charinfo left">
                 <div class="lives">
-                    <img v-for="n in player.lives" :src="player.character.icons.liveIcon">
+                    <img v-for="n in player.lives" :src="player.character.images.liveIcon">
                 </div>
                 <div class="kills">
-                    <img class="left" src="../assets/icons/swordicon-bg.png">
+                    <img class="left" src="../assets/images/swordicon-bg.png">
                     <p class="kills_count left">{{player.kills}}</p>
                 </div>
             </div>

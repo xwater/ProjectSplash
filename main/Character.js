@@ -2,37 +2,34 @@ module.exports =
   class Character {
     constructor (rosterCharacter, unlocked, aliases) {
       this.id = rosterCharacter.value
-      this.name = rosterCharacter.fullName;
+      this.name = rosterCharacter.fullName
       this.unlocked = unlocked
       this.aliases = aliases
+
       this.sfx = {
         taunts: [],
         chimes: [],
         winner: './assets/sfx/announcer/winner.wav',
-        announcer: './assets/sfx/announcer/' + this.name + '.wav',
-        suddenDeath: './assets/sfx/announcer/suddendeath.wav'
+        suddenDeath: './assets/sfx/announcer/suddendeath.wav',
+        announcer: './assets/sfx/' + this.name + '/announcer/1.wav'
+      }
+
+      this.images = {
+        liveIcon: './assets/character/' + this.name + '/lives/1.png',
+        livePortrait: './assets/character/' + this.name + '/live-portraits/1.png',
+        rosterPortraits: []
       }
 
       // TODO possible modifiers
 
       this.gifs = {
         win: [],
-        lose: './assets/gifs/lose/' + this.name + '/' + this.name + '1.gif',
+        lose: './assets/gifs/lose/' + this.name + '/1.gif',
         challenger: './assets/gifs/misc/challenger.gif'
       }
 
-      this.icons = {
-        liveIcon: './assets/icons/lives/' + this.name + 'L.png'
-      }
-
-      this.portraits = {
-        livePortrait: './assets/icons/live-portraits/' + this.name + '.png',
-        rosterPortraits: []
-
-      }
-
       this.videos = {
-        victory: './assets/gifs/victory/' + this.name + '/' + this.name + '.mp4'
+        victory: './assets/gifs/victory/' + this.name + '/1.mp4'
       }
 
       this.initTaunts()
@@ -43,25 +40,25 @@ module.exports =
 
     initTaunts () {
       for (let i = 1; i < 6; i++) {
-        this.sfx.taunts.push('./assets/sfx/' + this.name + '/taunt/' + this.name + i)
+        this.sfx.taunts.push('./assets/sfx/' + this.name + '/taunt/' + i + '.wav')
       }
     }
 
     initChimes () {
       for (let i = 1; i < 2; i++) {
-        this.sfx.chimes.push('./assets/sfx/' + this.name + '/chime/' + this.name + i)
+        this.sfx.chimes.push('./assets/sfx/' + this.name + '/chime/' + i + '.wav')
       }
     }
 
     initRosterPortraits () {
       for (let i = 1; i < 9; i++) {
-        this.portraits.rosterPortraits.push('./assets/icons/portraits/' + this.name + '/' + this.name + i + '.png')
+        this.images.rosterPortraits.push('./assets/character/' + this.name + '/character-portraits/' + i + '.png')
       }
     }
 
     initWinGifs () {
       for (let i = 1; i < 4; i++) {
-        this.gifs.win.push('./assets/gifs/win/' + this.name + '/' + this.name + i + '.gif')
+        this.gifs.win.push('./assets/gifs/win/' + this.name + '/' + i + '.gif')
       }
     }
   }

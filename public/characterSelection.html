@@ -89,20 +89,19 @@
 
       loadCharacters () {
         this.charactersUrls = []
-        let basePath = './assets/icons/select-icons/'
         for (let character of this.gameState.roster.charPool) {
           if (character.unlocked === true) {
-            this.charactersUrls.push(basePath + character.name + '.png')
+            this.charactersUrls.push('./assets/character/' + character.name + '/select-icons/1.png')
           }
           else {
-            this.charactersUrls.push(basePath + 'hidden.png')
+            this.charactersUrls.push('./assets/images/hidden.png')
           }
         }
       },
 
       getRandomRosterPortrait (player) {
         let randomNumber = this.getRandomInt(0, 7)
-        return player.character.portraits.rosterPortraits[randomNumber]
+        return player.character.images.rosterPortraits[randomNumber]
       },
 
     },
