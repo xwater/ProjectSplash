@@ -6,7 +6,8 @@ const express = require('express')
 const app = express()
 const socket = require('socket.io')
 const server = app.listen(config.serverPort, function () {
-  console.log('listening on http://localhost:' + config.serverPort)
+// eslint-disable-next-line no-console
+  console.debug('listening on http://localhost:' + config.serverPort)
 })
 
 app.use(express.static('public'))
@@ -278,6 +279,7 @@ function gameOver () {
     payout(gameState.winners[0], 0)
     gameState.winningTargetIndex = gameState.winners[0].pos
     checkUnlocks().then(()=>{
+      io.to(webSockets.char).emit('load-characters', gameState)
       endGame()
     })
   } else if (gameState.winners.length === 2) {
@@ -312,6 +314,7 @@ function suddenDeathWinner (winner) {
   gameState.winningTargetIndex = winner
 
   checkUnlocks().then(()=>{
+    io.to(webSockets.char).emit('load-characters', gameState)
     endGame()
   })
 }
@@ -424,7 +427,6 @@ function checkUnlocks () {
         db.unlockCharacter(gameState.roster.SHEIK.fullName)
         char.unlocked = true
         gameState.unlockedCharacter = char
-        io.to(webSockets.char).emit('load-characters', gameState)
         resolve(char)
       }
     })
@@ -437,7 +439,6 @@ function checkUnlocks () {
         db.unlockCharacter(gameState.roster.ZERO_SUIT_SAMUS.fullName)
         char.unlocked = true
         gameState.unlockedCharacter = char
-        io.to(webSockets.char).emit('load-characters', gameState)
         resolve(char)
       }
     })
@@ -451,7 +452,6 @@ function checkUnlocks () {
         db.unlockCharacter(gameState.roster.PALUTENA.fullName)
         char.unlocked = true
         gameState.unlockedCharacter = char
-        io.to(webSockets.char).emit('load-characters', gameState)
         resolve(char)
       }
     })
@@ -465,7 +465,6 @@ function checkUnlocks () {
         db.unlockCharacter(gameState.roster.WII_FIT_TRAINER.fullName)
         char.unlocked = true
         gameState.unlockedCharacter = char
-        io.to(webSockets.char).emit('load-characters', gameState)
         resolve(char)
       }
     })
@@ -478,7 +477,6 @@ function checkUnlocks () {
         db.unlockCharacter(gameState.roster.LUCINA.fullName)
         char.unlocked = true
         gameState.unlockedCharacter = char
-        io.to(webSockets.char).emit('load-characters', gameState)
         resolve(char)
       }
     })
@@ -493,7 +491,6 @@ function checkUnlocks () {
         db.unlockCharacter(gameState.roster.ROSALINA.fullName)
         char.unlocked = true
         gameState.unlockedCharacter = char
-        io.to(webSockets.char).emit('load-characters', gameState)
         resolve(char)
       }
     })
