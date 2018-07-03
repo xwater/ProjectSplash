@@ -40,8 +40,8 @@ db.serialize(() => {
     '`id` INTEGER PRIMARY KEY AUTOINCREMENT, ' +
     '`game_id` INTEGER, ' +
     '`kill_id` INTEGER, ' +
-    '`player` INTEGER, ' +
-    '`target` INTEGER )', error => {
+    '`player` TEXT, ' +
+    '`target` TEXT )', error => {
     if (error) {
       throw (error)
     }
@@ -158,8 +158,8 @@ exports.addKill = (gameState) => {
       [
         gameState.gameID,
         gameState.killID,
-        gameState.safeTargetIndex,
-        gameState.killTargetIndex
+        gameState.players[gameState.safeTargetIndex].character.name,
+        gameState.players[gameState.killTargetIndex].character.name
       ])
   })
 }

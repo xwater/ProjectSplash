@@ -10,6 +10,7 @@
             integrity="sha384-u/bQvRA/1bobcXlcEYpsEdFVK/vJs3+T+nXLsBYJthmdBuavHvAW6UsmqO2Gd/F9"
             crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js" integrity="sha256-ji09tECORKvr8xB9iCl8DJ8iNMLriDchC1+p+yt1hSs=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
     <title>Splash Bros - Admin</title>
@@ -24,63 +25,67 @@
 </head>
 <body>
 
-
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="#">Splash Bot</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item">
-                <a class="nav-link" target="_blank" href="./overlay.html">Overlay</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" target="_blank" href="./characterSelection.html">Character Selection</a>
-            </li>
-        </ul>
-    </div>
-</nav>
-
-<div id="app" class="container">
-    <div class="row pt-4">
-        <div class="col-sm-6 shadow-lg p-3 mb-5 bg-white rounded">
-            <div v-show="gameState.inProgress && gameState.suddenDeath != 1">
-                <button id="p1" class="btn btn-info" @click="normalWin(1)">Player 1 Win</button>
-                <button id="p2" class="btn btn-success" @click="normalWin(2)">Player 2 Win</button>
-                <button id="p3" class="btn btn-danger" @click="normalWin(3)">Player 3 Win</button>
-                <button id="p4" class="btn btn-warning" @click="normalWin(4)">Player 4 Win</button>
-            </div>
-
-            <div v-show="gameState.suddenDeath == 1 && gameState.inProgress">
-                <h1 style="padding-bottom: 10px">Sudden Death!</h1>
-                <button v-show="suddenDeathPlayer1" class="btn btn-info" @click="suddenDeathWin(1)">Player 1 Win SD</button>
-                <button v-show="suddenDeathPlayer2" class="btn btn-success" @click="suddenDeathWin(2)">Player 2 Win SD</button>
-                <button v-show="suddenDeathPlayer3" class="btn btn-danger" @click="suddenDeathWin(3)">Player 3 Win SD</button>
-                <button v-show="suddenDeathPlayer4" class="btn btn-warning" @click="suddenDeathWin(4)">Player 4 Win SD</button>
-            </div>
-
-            <div v-show="gameState.inProgress == false && gameState.generated" class="btn-group-vertical">
-                <button class="btn btn-success" @click="startGame">Start Game</button>
-            </div>
-            <!--v-show="!gameState.generated"-->
-            <div  class="btn-group-vertical">
-                <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false">Generate Game</button>
-            </div>
-
+<div id="app">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Splash Bot</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" target="_blank" href="/overlay">Overlay</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" target="_blank" href="./characters">Character Selection</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" @click="authorizeWithStreamLabs" href="#">Authenticate With Stream Labs</a>
+                </li>
+            </ul>
         </div>
-        <div class="col-sm-4">
-            <div id="connections">
-                <ul class="list-group">
-                    <li v-if="gameState.adminConnected" class="list-group-item list-group-item-info">Admin Connected</li>
-                    <li v-else class="list-group-item list-group-item-warning">Admin Not Connected</li>
-                    <li v-if="gameState.characterSelectionConnected" class="list-group-item list-group-item-info">Character Selection Connected</li>
-                    <li v-else class="list-group-item list-group-item-warning">Character Selection Not Connected</li>
-                    <li v-if="gameState.overlayConnected" class="list-group-item list-group-item-info">Overlay Connected</li>
-                    <li v-else class="list-group-item list-group-item-warning">Overlay Not Connected</li>
-                    <li v-if="gameState.adminConnected && gameState.characterSelectionConnected && gameState.overlayConnected" class="list-group-item list-group-item-success">Connection Ready!</li>
-                    <li v-else class="list-group-item list-group-item-danger">Connection Not Ready!</li>
-                </ul>
+    </nav>
+    <div class="container">
+
+        <div class="row pt-4">
+            <div class="col-sm-6 shadow-lg p-3 mb-5 bg-white rounded">
+                <div v-show="gameState.inProgress && gameState.suddenDeath != 1">
+                    <button id="p1" class="btn btn-info" @click="normalWin(1)">Player 1 Win</button>
+                    <button id="p2" class="btn btn-success" @click="normalWin(2)">Player 2 Win</button>
+                    <button id="p3" class="btn btn-danger" @click="normalWin(3)">Player 3 Win</button>
+                    <button id="p4" class="btn btn-warning" @click="normalWin(4)">Player 4 Win</button>
+                </div>
+
+                <div v-show="gameState.suddenDeath == 1 && gameState.inProgress">
+                    <h1 style="padding-bottom: 10px">Sudden Death!</h1>
+                    <button v-show="suddenDeathPlayer1" class="btn btn-info" @click="suddenDeathWin(1)">Player 1 Win SD</button>
+                    <button v-show="suddenDeathPlayer2" class="btn btn-success" @click="suddenDeathWin(2)">Player 2 Win SD</button>
+                    <button v-show="suddenDeathPlayer3" class="btn btn-danger" @click="suddenDeathWin(3)">Player 3 Win SD</button>
+                    <button v-show="suddenDeathPlayer4" class="btn btn-warning" @click="suddenDeathWin(4)">Player 4 Win SD</button>
+                </div>
+
+                <div v-show="gameState.inProgress == false && gameState.generated" class="btn-group-vertical">
+                    <button class="btn btn-success" @click="startGame">Start Game</button>
+                </div>
+                <!--v-show="!gameState.generated"-->
+                <div class="btn-group-vertical">
+                    <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false">Generate Game</button>
+                </div>
+
+            </div>
+            <div class="col-sm-4">
+                <div id="connections">
+                    <ul class="list-group">
+                        <li v-if="gameState.adminConnected" class="list-group-item list-group-item-info">Admin Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Admin Not Connected</li>
+                        <li v-if="gameState.characterSelectionConnected" class="list-group-item list-group-item-info">Character Selection Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Character Selection Not Connected</li>
+                        <li v-if="gameState.overlayConnected" class="list-group-item list-group-item-info">Overlay Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Overlay Not Connected</li>
+                        <li v-if="gameState.adminConnected && gameState.characterSelectionConnected && gameState.overlayConnected" class="list-group-item list-group-item-success">Connection Ready!</li>
+                        <li v-else class="list-group-item list-group-item-danger">Connection Not Ready!</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -102,6 +107,14 @@
         suddenDeathPlayer2: false,
         suddenDeathPlayer3: false,
         suddenDeathPlayer4: false,
+        streamLabsBaseURL: 'https://streamlabs.com/api/v1.0/',
+        clientId: 'BnR4vgvJB4x5Z0AwHcQ38Mzk2bkHvOnYa376xWIZ',
+        scopes: 'points.read points.write',
+        redirectURI: 'http://localhost:3000/callback',
+        code: null,
+        accessToken: null,
+        expiresIn: 0,
+        refreshToken: null
       }
     },
     methods: {
@@ -188,7 +201,30 @@
         else {
           this.socket.io.reconnect()
         }
-      }
+      },
+
+      encodeQueryData (data) {
+        let ret = []
+        for (let d in data)
+          ret.push(d + '=' + data[d])
+        return ret.join('&')
+      },
+
+      authorizeWithStreamLabs () {
+        let data = {
+          client_id: this.clientId,
+          response_type: 'code',
+          redirect_uri: this.redirectURI,
+          scope: this.scopes
+        }
+        let queryString = this.encodeQueryData(data)
+
+        let url = this.streamLabsBaseURL + 'authorize?' + queryString
+        window.open(url, '_self')
+      },
+
+
+
     },
 
     mounted () {

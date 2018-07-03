@@ -3,6 +3,8 @@ const config = require('./config')
 const Player = require('./main/Player')
 const db = require('./main/database')
 const express = require('express')
+const bodyParser = require('body-parser')
+const axios = require('axios')
 const app = express()
 const socket = require('socket.io')
 const server = app.listen(config.serverPort, function () {
@@ -10,7 +12,65 @@ const server = app.listen(config.serverPort, function () {
   console.debug('listening on http://localhost:' + config.serverPort)
 })
 
+let streamLabs = {
+  accessToken: null,
+  refreshToken: null,
+  expiresIn: 0
+}
+
 app.use(express.static('public'))
+app.use(bodyParser.json()) // support json encoded bodies
+app.use(bodyParser.urlencoded({extended: true})) // support encoded bodies
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html')
+})
+
+app.get('/characters', (req, res) => {
+  res.sendFile(__dirname + '/public/characterSelection.html')
+})
+app.get('/overlay', (req, res) => {
+  res.sendFile(__dirname + '/public/overlay.html')
+})
+
+app.get('/callback', (req, res) => {
+  res.sendFile(__dirname + '/public/callback.html')
+})
+
+app.post('/auth', (req, res) => {
+  let code = req.body.code
+  if (code === null || code === undefined) {
+    res.redirect('/?failed-to-authorize')
+  }
+  axios.post('https://streamlabs.com/api/v1.0/token', {
+    grant_type: 'authorization_code',
+    client_id: config.streamlabs.clientId,
+    client_secret: config.streamlabs.clientSecret,
+    redirect_uri: 'http://localhost:3000/callback',
+    code: code
+
+  }).then(resp => {
+    streamLabs.accessToken = resp.data.access_token
+    streamLabs.refreshToken = resp.data.refresh_token
+    streamLabs.expiresIn = resp.data.expires_in
+    return res.redirect('/')
+  }).catch(error => {
+    return res.send(error.response.data)
+  })
+})
+
+function getPoints () {
+  if (streamLabs.accessToken !== null && streamLabs.accessToken !== undefined) {
+    return axios.get('https://streamlabs.com/api/v1.0/points', {
+      params: {
+        access_token: streamLabs.accessToken,
+        username: 'blackmarmalade',
+        channel: 'blackmarmalade'
+      }
+    })
+  }
+  return false
+}
 
 const io = socket(server, {})
 
@@ -107,6 +167,11 @@ io.on('connection', (socket) => {
   })
 
   socket.on('generate-game', () => {
+    getPoints().then(data => {
+      console.log(data)
+    }).catch(error => {
+      console.log(error)
+    })
     generateNewGame()
   })
 
@@ -278,7 +343,7 @@ function gameOver () {
     // unlock = Unlockables(winners[0])
     payout(gameState.winners[0], 0)
     gameState.winningTargetIndex = gameState.winners[0].pos
-    checkUnlocks().then(()=>{
+    checkUnlocks().then(() => {
       io.to(webSockets.char).emit('load-characters', gameState)
       endGame()
     })
@@ -313,7 +378,7 @@ function suddenDeathWinner (winner) {
   gameState.players[winner].kills += 1
   gameState.winningTargetIndex = winner
 
-  checkUnlocks().then(()=>{
+  checkUnlocks().then(() => {
     io.to(webSockets.char).emit('load-characters', gameState)
     endGame()
   })
@@ -412,89 +477,89 @@ function calcPay (winners) {
 
 function checkUnlocks () {
   return new Promise(resolve => {
-  let winner = gameState.winners[0]
-  let activePlayers = []
-  for (let i = 0; i < gameState.players.length; i++) {
-    activePlayers.push(gameState.players[i].character.name)
-  }
+    let winner = gameState.winners[0]
+    let activePlayers = []
+    for (let i = 0; i < gameState.players.length; i++) {
+      activePlayers.push(gameState.players[i].character.name)
+    }
 
-  if (winner.character.name === gameState.roster.ZELDA.fullName) {
-    gameState.roster.charPool.forEach(char => {
-      if (char.name === gameState.roster.SHEIK.fullName) {
-        if (char.unlocked === true) {
-          resolve(false)
+    if (winner.character.name === gameState.roster.ZELDA.fullName) {
+      gameState.roster.charPool.forEach(char => {
+        if (char.name === gameState.roster.SHEIK.fullName) {
+          if (char.unlocked === true) {
+            resolve(false)
+          }
+          db.unlockCharacter(gameState.roster.SHEIK.fullName)
+          char.unlocked = true
+          gameState.unlockedCharacter = char
+          resolve(char)
         }
-        db.unlockCharacter(gameState.roster.SHEIK.fullName)
-        char.unlocked = true
-        gameState.unlockedCharacter = char
-        resolve(char)
-      }
-    })
-  } else if (winner.character.name === gameState.roster.SAMUS.fullName) {
-    gameState.roster.charPool.forEach(char => {
-      if (char.name === gameState.roster.ZERO_SUIT_SAMUS.fullName) {
-        if (char.unlocked === true) {
-          resolve(false)
+      })
+    } else if (winner.character.name === gameState.roster.SAMUS.fullName) {
+      gameState.roster.charPool.forEach(char => {
+        if (char.name === gameState.roster.ZERO_SUIT_SAMUS.fullName) {
+          if (char.unlocked === true) {
+            resolve(false)
+          }
+          db.unlockCharacter(gameState.roster.ZERO_SUIT_SAMUS.fullName)
+          char.unlocked = true
+          gameState.unlockedCharacter = char
+          resolve(char)
         }
-        db.unlockCharacter(gameState.roster.ZERO_SUIT_SAMUS.fullName)
-        char.unlocked = true
-        gameState.unlockedCharacter = char
-        resolve(char)
-      }
-    })
-  }
-  else if (winner.character.name === gameState.roster.PIT.fullName) {
-    gameState.roster.charPool.forEach(char => {
-      if (char.name === gameState.roster.PALUTENA.fullName) {
-        if (char.unlocked === true) {
-          resolve(false)
+      })
+    }
+    else if (winner.character.name === gameState.roster.PIT.fullName) {
+      gameState.roster.charPool.forEach(char => {
+        if (char.name === gameState.roster.PALUTENA.fullName) {
+          if (char.unlocked === true) {
+            resolve(false)
+          }
+          db.unlockCharacter(gameState.roster.PALUTENA.fullName)
+          char.unlocked = true
+          gameState.unlockedCharacter = char
+          resolve(char)
         }
-        db.unlockCharacter(gameState.roster.PALUTENA.fullName)
-        char.unlocked = true
-        gameState.unlockedCharacter = char
-        resolve(char)
-      }
-    })
-  }
-  else if (winner.character.name === gameState.roster.GAME_AND_WATCH.fullName) {
-    gameState.roster.charPool.forEach(char => {
-      if (char.name === gameState.roster.WII_FIT_TRAINER.fullName) {
-        if (char.unlocked === true) {
-          resolve(false)
+      })
+    }
+    else if (winner.character.name === gameState.roster.GAME_AND_WATCH.fullName) {
+      gameState.roster.charPool.forEach(char => {
+        if (char.name === gameState.roster.WII_FIT_TRAINER.fullName) {
+          if (char.unlocked === true) {
+            resolve(false)
+          }
+          db.unlockCharacter(gameState.roster.WII_FIT_TRAINER.fullName)
+          char.unlocked = true
+          gameState.unlockedCharacter = char
+          resolve(char)
         }
-        db.unlockCharacter(gameState.roster.WII_FIT_TRAINER.fullName)
-        char.unlocked = true
-        gameState.unlockedCharacter = char
-        resolve(char)
-      }
-    })
-  } else if (winner.character.name === gameState.roster.MARTH.fullName && winner.score >= 5) {
-    gameState.roster.charPool.forEach(char => {
-      if (char.name === gameState.roster.LUCINA.fullName) {
-        if (char.unlocked === true) {
-          resolve(false)
+      })
+    } else if (winner.character.name === gameState.roster.MARTH.fullName && winner.score >= 5) {
+      gameState.roster.charPool.forEach(char => {
+        if (char.name === gameState.roster.LUCINA.fullName) {
+          if (char.unlocked === true) {
+            resolve(false)
+          }
+          db.unlockCharacter(gameState.roster.LUCINA.fullName)
+          char.unlocked = true
+          gameState.unlockedCharacter = char
+          resolve(char)
         }
-        db.unlockCharacter(gameState.roster.LUCINA.fullName)
-        char.unlocked = true
-        gameState.unlockedCharacter = char
-        resolve(char)
-      }
-    })
+      })
 
-  } else if (activePlayers.includes(gameState.roster.MARIO.fullName) && activePlayers.includes(gameState.roster.LUIGI.fullName) && (activePlayers.includes(gameState.roster.YOSHI.fullName) || activePlayers.includes(gameState.roster.PEACH.fullName))) {
+    } else if (activePlayers.includes(gameState.roster.MARIO.fullName) && activePlayers.includes(gameState.roster.LUIGI.fullName) && (activePlayers.includes(gameState.roster.YOSHI.fullName) || activePlayers.includes(gameState.roster.PEACH.fullName))) {
 
-    gameState.roster.charPool.forEach(char => {
-      if (char.name === gameState.roster.ROSALINA.fullName) {
-        if (char.unlocked === true) {
-          resolve(false)
+      gameState.roster.charPool.forEach(char => {
+        if (char.name === gameState.roster.ROSALINA.fullName) {
+          if (char.unlocked === true) {
+            resolve(false)
+          }
+          db.unlockCharacter(gameState.roster.ROSALINA.fullName)
+          char.unlocked = true
+          gameState.unlockedCharacter = char
+          resolve(char)
         }
-        db.unlockCharacter(gameState.roster.ROSALINA.fullName)
-        char.unlocked = true
-        gameState.unlockedCharacter = char
-        resolve(char)
-      }
-    })
-  }
+      })
+    }
     resolve(false)
   })
 }
