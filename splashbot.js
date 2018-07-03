@@ -3,8 +3,6 @@ const config = require('./config')
 const Player = require('./main/Player')
 const db = require('./main/database')
 const express = require('express')
-const bodyParser = require('body-parser')
-const axios = require('axios')
 const app = express()
 const socket = require('socket.io')
 const server = app.listen(config.serverPort, function () {
@@ -12,71 +10,18 @@ const server = app.listen(config.serverPort, function () {
   console.debug('listening on http://localhost:' + config.serverPort)
 })
 
-let streamLabs = {
-  accessToken: null,
-  refreshToken: null,
-  expiresIn: 0
-}
-
 app.use(express.static('public'))
-app.use(bodyParser.json()) // support json encoded bodies
-app.use(bodyParser.urlencoded({extended: true})) // support encoded bodies
-
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html')
-})
-
-app.get('/characters', (req, res) => {
-  res.sendFile(__dirname + '/public/characterSelection.html')
-})
-app.get('/overlay', (req, res) => {
-  res.sendFile(__dirname + '/public/overlay.html')
-})
-
-app.get('/callback', (req, res) => {
-  res.sendFile(__dirname + '/public/callback.html')
-})
-
-app.post('/auth', (req, res) => {
-  let code = req.body.code
-  if (code === null || code === undefined) {
-    res.redirect('/?failed-to-authorize')
-  }
-  axios.post('https://streamlabs.com/api/v1.0/token', {
-    grant_type: 'authorization_code',
-    client_id: config.streamlabs.clientId,
-    client_secret: config.streamlabs.clientSecret,
-    redirect_uri: 'http://localhost:3000/callback',
-    code: code
-
-  }).then(resp => {
-    streamLabs.accessToken = resp.data.access_token
-    streamLabs.refreshToken = resp.data.refresh_token
-    streamLabs.expiresIn = resp.data.expires_in
-    return res.redirect('/')
-  }).catch(error => {
-    return res.send(error.response.data)
-  })
-})
-
-function getPoints () {
-  if (streamLabs.accessToken !== null && streamLabs.accessToken !== undefined) {
-    return axios.get('https://streamlabs.com/api/v1.0/points', {
-      params: {
-        access_token: streamLabs.accessToken,
-        username: 'blackmarmalade',
-        channel: 'blackmarmalade'
-      }
-    })
-  }
-  return false
-}
+app.get('/', (req, res) => { res.sendFile(__dirname + '/public/index.html')})
+app.get('/characters', (req, res) => { res.sendFile(__dirname + '/public/characterSelection.html')})
+app.get('/overlay', (req, res) => { res.sendFile(__dirname + '/public/overlay.html')})
 
 const io = socket(server, {})
 
 const tmi = require('tmi.js')
 
 const gameState = {
+  channel: config.channels[0],
+  streamlabsConnected: false,
   generated: false,
   adminConnected: false,
   characterSelectionConnected: false,
@@ -140,6 +85,11 @@ io.on('connection', (socket) => {
     io.sockets.emit('gameStateUpdate', gameState)
   })
 
+  socket.on('streamlabs-connected', () => {
+    gameState.streamlabsConnected = true
+    io.sockets.emit('gameStateUpdate', gameState)
+  })
+
   socket.on('character-selection-connected', () => {
     webSockets.char = socket.id
     gameState.characterSelectionConnected = true
@@ -167,11 +117,6 @@ io.on('connection', (socket) => {
   })
 
   socket.on('generate-game', () => {
-    getPoints().then(data => {
-      console.log(data)
-    }).catch(error => {
-      console.log(error)
-    })
     generateNewGame()
   })
 

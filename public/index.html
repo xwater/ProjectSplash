@@ -40,7 +40,7 @@
                     <a class="nav-link" target="_blank" href="./characters">Character Selection</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" @click="authorizeWithStreamLabs" href="#">Authenticate With Stream Labs</a>
+                    <a class="nav-link" :href="authUrl + '#user=' + channel + '&user_url=' + currentURL">Authenticate With Stream Labs</a>
                 </li>
             </ul>
         </div>
@@ -69,7 +69,7 @@
                 </div>
                 <!--v-show="!gameState.generated"-->
                 <div class="btn-group-vertical">
-                    <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false">Generate Game</button>
+                    <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false || gameState.streamlabsConnected == false">Generate Game</button>
                 </div>
 
             </div>
@@ -82,6 +82,8 @@
                         <li v-else class="list-group-item list-group-item-warning">Character Selection Not Connected</li>
                         <li v-if="gameState.overlayConnected" class="list-group-item list-group-item-info">Overlay Connected</li>
                         <li v-else class="list-group-item list-group-item-warning">Overlay Not Connected</li>
+                        <li v-if="gameState.streamlabsConnected" class="list-group-item list-group-item-info">Streamlabs Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Streamlabs Not Connected</li>
                         <li v-if="gameState.adminConnected && gameState.characterSelectionConnected && gameState.overlayConnected" class="list-group-item list-group-item-success">Connection Ready!</li>
                         <li v-else class="list-group-item list-group-item-danger">Connection Not Ready!</li>
                     </ul>
@@ -103,20 +105,30 @@
         socketInit: false,
         socketError: null,
         gameState: {},
+        channel: null,
         suddenDeathPlayer1: false,
         suddenDeathPlayer2: false,
         suddenDeathPlayer3: false,
         suddenDeathPlayer4: false,
-        streamLabsBaseURL: 'https://streamlabs.com/api/v1.0/',
-        clientId: 'BnR4vgvJB4x5Z0AwHcQ38Mzk2bkHvOnYa376xWIZ',
-        scopes: 'points.read points.write',
-        redirectURI: 'http://localhost:3000/callback',
-        code: null,
-        accessToken: null,
-        expiresIn: 0,
-        refreshToken: null
+        // authUrl: 'http://localhost:8080/login/streamlabs',
+        authUrl: 'https://beta.chinnbot.tv/login/streamlabs',
+        currentURL: window.location.href,
+        params: {},
       }
     },
+
+    watch: {
+      gameState () {
+        if (this.gameState.channel !== undefined && this.gameState.channel.includes('#')) {
+          this.channel = this.gameState.channel.split('#')[1]
+        }
+        else {
+          this.channel = this.gameState.channel
+        }
+
+      }
+    },
+
     methods: {
       normalWin (team) {
         this.socket.emit('kill-player', team)
@@ -172,6 +184,18 @@
         this.suddenDeathPlayer4 = false
       },
 
+      splitParams: function () {
+        if (!document.location.href.includes('#')) {
+          return false
+        }
+        let tmpParams = document.location.href.split('#')[1].split('&')
+        tmpParams.forEach(param => {
+          let splitParam = param.split('=')
+          this.params[splitParam[0]] = splitParam[1]
+        })
+        return true
+      },
+
       connect () {
         if (!this.socketInit) {
           this.socket = io.connect('ws://localhost:3000', {
@@ -202,34 +226,16 @@
           this.socket.io.reconnect()
         }
       },
-
-      encodeQueryData (data) {
-        let ret = []
-        for (let d in data)
-          ret.push(d + '=' + data[d])
-        return ret.join('&')
-      },
-
-      authorizeWithStreamLabs () {
-        let data = {
-          client_id: this.clientId,
-          response_type: 'code',
-          redirect_uri: this.redirectURI,
-          scope: this.scopes
-        }
-        let queryString = this.encodeQueryData(data)
-
-        let url = this.streamLabsBaseURL + 'authorize?' + queryString
-        window.open(url, '_self')
-      },
-
-
-
     },
 
     mounted () {
 
       this.connect()
+
+      let foundParams = this.splitParams()
+      if (foundParams) {
+        this.socket.emit('streamlabs-connected', {})
+      }
 
       this.socket.on('admin-connected', data => {
         this.gameState = data
