@@ -3,7 +3,8 @@
 
 ### Requirements
 
-* [NodeJS](https://nodejs.org/en/)
+* [NodeJS](https://nodejs.org/en/) v9.10.0
+* [.NET FrameWork](https://www.microsoft.com/en-ca/download/confirmation.aspx?id=15354)
 
 ### Optional Requirements
 
@@ -35,6 +36,7 @@ Once you have set up the config.js file we can now start the bot.
 
 Required For first use
 ```bash
+npm install --global --production windows-build-tools
 npm install
 ```
 ----------------------------
@@ -52,7 +54,7 @@ Once one of the above commands has been run you should then open up. Open up you
 
 To join a team simply type !character_name in the chat where your bot is listening.
 
-For example if the team conists of Mario, Sonic, Jiggly Puff, and Yoshi one would simply type !mario or !jigglypuff to join that team. Once the game has started though joing teams is now disabled and users may now only join by typing !random in chat.
+For example if the team consists of Mario, Sonic, Jiggly Puff, and Yoshi one would simply type !mario or !jigglypuff to join that team. Once the game has started though joing teams is now disabled and users may now only join by typing !random in chat.
 
 
 
