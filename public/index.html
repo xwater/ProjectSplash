@@ -68,7 +68,7 @@
                     <button class="btn btn-success" @click="startGame">Start Game</button>
                 </div>
                 <!--v-show="!gameState.generated"-->
-                <div class="btn-group-vertical">
+                <div v-show="!gameState.generated" class="btn-group-vertical">
                     <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false">Generate Game</button>
                 </div>
 
