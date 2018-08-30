@@ -69,7 +69,7 @@
                 </div>
                 <!--v-show="!gameState.generated"-->
                 <div class="btn-group-vertical">
-                    <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false || gameState.streamlabsConnected == false">Generate Game</button>
+                    <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false">Generate Game</button>
                 </div>
 
             </div>
@@ -82,8 +82,8 @@
                         <li v-else class="list-group-item list-group-item-warning">Character Selection Not Connected</li>
                         <li v-if="gameState.overlayConnected" class="list-group-item list-group-item-info">Overlay Connected</li>
                         <li v-else class="list-group-item list-group-item-warning">Overlay Not Connected</li>
-                        <li v-if="gameState.streamlabsConnected" class="list-group-item list-group-item-info">Streamlabs Connected</li>
-                        <li v-else class="list-group-item list-group-item-warning">Streamlabs Not Connected</li>
+                        <!--<li v-if="gameState.streamlabsConnected" class="list-group-item list-group-item-info">Streamlabs Connected</li>-->
+                        <!--<li v-else class="list-group-item list-group-item-warning">Streamlabs Not Connected</li>-->
                         <li v-if="gameState.adminConnected && gameState.characterSelectionConnected && gameState.overlayConnected" class="list-group-item list-group-item-success">Connection Ready!</li>
                         <li v-else class="list-group-item list-group-item-danger">Connection Not Ready!</li>
                     </ul>
@@ -111,7 +111,7 @@
         suddenDeathPlayer3: false,
         suddenDeathPlayer4: false,
         // authUrl: 'http://localhost:8080/login/streamlabs',
-        authUrl: 'https://beta.chinnbot.tv/login/streamlabs',
+        // authUrl: 'https://beta.chinnbot.tv/login/streamlabs',
         currentURL: window.location.href,
         params: {},
       }
@@ -232,10 +232,10 @@
 
       this.connect()
 
-      let foundParams = this.splitParams()
-      if (foundParams) {
-        this.socket.emit('streamlabs-connected', {})
-      }
+      // let foundParams = this.splitParams()
+      // if (foundParams) {
+      //   this.socket.emit('streamlabs-connected', {})
+      // }
 
       this.socket.on('admin-connected', data => {
         this.gameState = data
