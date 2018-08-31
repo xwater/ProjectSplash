@@ -1,0 +1,285 @@
+<html>
+<head>
+    <link rel="stylesheet" href="../assets/css/overlay.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+            integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+            crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="../assets/js/howler.js-2.0.12/dist/howler.min.js"></script>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js" integrity="sha256-ji09tECORKvr8xB9iCl8DJ8iNMLriDchC1+p+yt1hSs=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+    <title>Splash Bros - Overlay</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/favicon/site.webmanifest">
+    <link rel="mask-icon" href="./assets/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+</head>
+<body style="background-repeat: no-repeat;">
+<div id="overlay">
+    <div v-if="showVideo == true">
+        <video id="video" width="1920" style="z-index:99;" autoplay>
+            <source id="mp4src" type="video/mp4" :src="videoURL">
+        </video>
+    </div>
+
+    <div id="animation_container">
+        <div id="Wanimation">
+            <img :src="winAnimation" height="350px" v-if="showWinLoseAnimation === true">
+        </div>
+        <div id="Lanimation">
+            <img :src="loseAnimation" height="350px" v-if="showWinLoseAnimation === true">
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div class="charbox" v-for="(player, index) in gameState.players">
+            <img class="charicon left"
+                 :id="`player-` + (index+1)+ `-portrait`"
+                 :src="player.character.images.livePortrait"
+                 :class="{shakeIt: shake(index)}">
+            <div class="charinfo left">
+                <div class="lives">
+                    <img v-for="n in player.lives" :src="player.character.images.liveIcon">
+                </div>
+                <div class="kills">
+                    <img class="left" src="../assets/images/swordicon-bg.png">
+                    <p class="kills_count left">{{player.kills}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+<script type="text/javascript">
+  let app = new Vue({
+    el: '#overlay',
+    data () {
+      return {
+        socket: null,
+        socketInit: false,
+        socketError: null,
+        gameState: {},
+        winAnimation: null,
+        loseAnimation: null,
+        showWinLoseAnimation: false,
+        shake1: false,
+        shake2: false,
+        shake3: false,
+        shake4: false,
+        videoURL: null,
+        showVideo: false
+
+      }
+    },
+
+    computed: {},
+    methods: {
+
+      shake (index) {
+        switch (index) {
+          case 0:
+            return this.shake1
+          case 1:
+            return this.shake2
+          case 2:
+            return this.shake3
+          case 3:
+            return this.shake4
+        }
+      },
+
+      connect () {
+        if (!this.socketInit) {
+          this.socket = io.connect('ws://localhost:3000', {
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: Infinity
+          })
+          this.socketInit = true
+
+          this.socket.on('connect', () => {
+            this.socket.emit('overlay-connected', {})
+          })
+
+          this.socket.on('reconnect', (attemptNumber) => {
+            this.socket.emit('overlay-connected', {})
+          })
+
+          this.socket.on('disconnect', () => {
+            this.socket.disconnect()
+            setTimeout(() => {
+              this.connect()
+            }, 5000)
+          })
+        }
+        else {
+          this.socket.io.reconnect()
+        }
+      },
+
+      getRandomInt (min, max) {
+        return Math.floor(Math.random() * max) + 1
+      },
+
+      // plays audio, arg is path of sound to play.  if multiple files, will play sequentially
+      playAudio (args) {
+        return new Promise(resolve => {
+
+          let audio = []
+          // build sequential sounds to play
+          for (let i = 0; i < args.length; ++i) {
+            audio[i] = new Howl({
+              src: [args[i]],
+              format: ['ogg', 'wav', 'mp3'],
+              volume: 0.5,
+              onend: function () {
+                if (audio[i - 1]) {
+                  audio[i - 1].play()
+                }
+                else {
+                  resolve()
+                }
+              }
+            })
+          }
+          audio[args.length - 1].play()
+        })
+      },
+
+      killPlayer () {
+        let players = this.gameState.players
+        console.log('Winner index: ', this.gameState.safeTargetIndex)
+        console.log('Loser index: ', this.gameState.killTargetIndex)
+
+        let audioToPlay = [
+          players[this.gameState.safeTargetIndex].character.sfx.taunts[this.getRandomInt(0, 4)],
+          players[this.gameState.safeTargetIndex].character.sfx.chimes[0]
+        ]
+
+        this.showWinLoseAnimation = true
+
+        this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
+        this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
+
+        this.playAudio(audioToPlay).then(() => {
+          this.showWinLoseAnimation = false
+        })
+
+        this.animateLifeContainer()
+      },
+
+      animateLifeContainer () {
+        let shakeTarget = this.gameState.killTargetIndex
+        switch (shakeTarget) {
+          case 0:
+            this.shake1 = true
+            setTimeout(() => {
+              this.shake1 = false
+            }, 2000)
+            break
+          case 1:
+            this.shake2 = true
+            setTimeout(() => {
+              this.shake2 = false
+            }, 2000)
+            break
+          case 2:
+            this.shake3 = true
+            setTimeout(() => {
+              this.shake3 = false
+            }, 2000)
+            break
+          case 3:
+            this.shake4 = true
+            setTimeout(() => {
+              this.shake4 = false
+            }, 2000)
+            break
+        }
+      },
+
+      suddenDeath () {
+        // TODO add sudden death MP4
+        let players = this.gameState.players
+
+        let roundWinnerAudio = [
+          players[this.gameState.safeTargetIndex].character.sfx.suddenDeath,
+          players[this.gameState.safeTargetIndex].character.sfx.taunts[this.getRandomInt(0, 4)],
+          players[this.gameState.safeTargetIndex].character.sfx.chimes[0],
+        ]
+
+        this.showWinLoseAnimation = true
+
+        this.winAnimation = players[this.gameState.safeTargetIndex].character.gifs.win[this.getRandomInt(0, 2)]
+        this.loseAnimation = players[this.gameState.killTargetIndex].character.gifs.lose
+
+        this.playAudio(roundWinnerAudio).then(() => {
+          this.showWinLoseAnimation = false
+        })
+
+        this.animateLifeContainer()
+
+      },
+
+      gameOver () {
+        let winner = this.gameState.players[this.gameState.winningTargetIndex]
+        // console.log('Winner is: ', player)
+        this.showVideo = true
+
+        this.videoURL = winner.character.videos.victory
+
+        let audioToPlay = []
+        //last goes first
+        if (this.gameState.unlockedCharacter === null) {
+          audioToPlay.push(winner.character.sfx.announcer)
+          audioToPlay.push(winner.character.sfx.winner)
+          audioToPlay.push(winner.character.sfx.chimes[0])
+        }
+        else {
+          audioToPlay.push(winner.character.sfx.challengerApproaching)
+          audioToPlay.push(winner.character.sfx.announcer)
+          audioToPlay.push(winner.character.sfx.winner)
+          audioToPlay.push(winner.character.sfx.chimes[0])
+        }
+
+        this.playAudio(audioToPlay).then(() => {
+          this.showVideo = false
+        })
+      }
+
+    },
+    mounted () {
+      this.connect()
+
+      this.socket.on('gameStateUpdate', gameState => {
+        this.gameState = gameState
+      })
+
+      this.socket.on('kill-player', gameState => {
+        this.gameState = gameState
+        this.killPlayer(event.gameState)
+      })
+
+      this.socket.on('sudden-death', gameState => {
+        this.gameState = gameState
+        this.suddenDeath()
+      })
+      this.socket.on('game-over', gameState => {
+        this.gameState = gameState
+        this.gameOver()
+      })
+    }
+  })
+</script>

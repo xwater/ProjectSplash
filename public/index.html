@@ -1,0 +1,260 @@
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
+          rel="stylesheet"
+          ntegrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
+          crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.bundle.min.js"
+            integrity="sha384-u/bQvRA/1bobcXlcEYpsEdFVK/vJs3+T+nXLsBYJthmdBuavHvAW6UsmqO2Gd/F9"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js" integrity="sha256-ji09tECORKvr8xB9iCl8DJ8iNMLriDchC1+p+yt1hSs=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+    <title>Splash Bros - Admin</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/favicon/site.webmanifest">
+    <link rel="mask-icon" href="./assets/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+</head>
+<body>
+
+<div id="app">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Splash Bot</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" target="_blank" href="/overlay">Overlay</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" target="_blank" href="./characters">Character Selection</a>
+                </li>
+                <!--<li class="nav-item">-->
+                    <!--<a class="nav-link" :href="authUrl + '#user=' + channel + '&user_url=' + currentURL">Authenticate With Stream Labs</a>-->
+                <!--</li>-->
+            </ul>
+        </div>
+    </nav>
+    <div class="container">
+
+        <div class="row pt-4">
+            <div class="col-sm-6 shadow-lg p-3 mb-5 bg-white rounded">
+                <div v-show="gameState.inProgress && gameState.suddenDeath != 1">
+                    <button id="p1" class="btn btn-info" @click="normalWin(1)">Player 1 Win</button>
+                    <button id="p2" class="btn btn-success" @click="normalWin(2)">Player 2 Win</button>
+                    <button id="p3" class="btn btn-danger" @click="normalWin(3)">Player 3 Win</button>
+                    <button id="p4" class="btn btn-warning" @click="normalWin(4)">Player 4 Win</button>
+                </div>
+
+                <div v-show="gameState.suddenDeath == 1 && gameState.inProgress">
+                    <h1 style="padding-bottom: 10px">Sudden Death!</h1>
+                    <button v-show="suddenDeathPlayer1" class="btn btn-info" @click="suddenDeathWin(1)">Player 1 Win SD</button>
+                    <button v-show="suddenDeathPlayer2" class="btn btn-success" @click="suddenDeathWin(2)">Player 2 Win SD</button>
+                    <button v-show="suddenDeathPlayer3" class="btn btn-danger" @click="suddenDeathWin(3)">Player 3 Win SD</button>
+                    <button v-show="suddenDeathPlayer4" class="btn btn-warning" @click="suddenDeathWin(4)">Player 4 Win SD</button>
+                </div>
+
+                <div v-show="gameState.inProgress == false && gameState.generated" class="btn-group-vertical">
+                    <button class="btn btn-success" @click="startGame">Start Game</button>
+                </div>
+                <!--v-show="!gameState.generated"-->
+                <div v-show="!gameState.generated" class="btn-group-vertical">
+                    <button class="btn btn-primary" @click="generateGame" :disabled="gameState.adminConnected == false || gameState.overlayConnected == false || gameState.characterSelectionConnected == false">Generate Game</button>
+                </div>
+
+            </div>
+            <div class="col-sm-4">
+                <div id="connections">
+                    <ul class="list-group">
+                        <li v-if="gameState.adminConnected" class="list-group-item list-group-item-info">Admin Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Admin Not Connected</li>
+                        <li v-if="gameState.characterSelectionConnected" class="list-group-item list-group-item-info">Character Selection Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Character Selection Not Connected</li>
+                        <li v-if="gameState.overlayConnected" class="list-group-item list-group-item-info">Overlay Connected</li>
+                        <li v-else class="list-group-item list-group-item-warning">Overlay Not Connected</li>
+                        <!--<li v-if="gameState.streamlabsConnected" class="list-group-item list-group-item-info">Streamlabs Connected</li>-->
+                        <!--<li v-else class="list-group-item list-group-item-warning">Streamlabs Not Connected</li>-->
+                        <li v-if="gameState.adminConnected && gameState.characterSelectionConnected && gameState.overlayConnected" class="list-group-item list-group-item-success">Connection Ready!</li>
+                        <li v-else class="list-group-item list-group-item-danger">Connection Not Ready!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
+<script type="text/javascript">
+  let app = new Vue({
+    el: '#app',
+    data () {
+      return {
+        socket: null,
+        socketInit: false,
+        socketError: null,
+        gameState: {},
+        channel: null,
+        suddenDeathPlayer1: false,
+        suddenDeathPlayer2: false,
+        suddenDeathPlayer3: false,
+        suddenDeathPlayer4: false,
+        // authUrl: 'http://localhost:8080/login/streamlabs',
+        // authUrl: 'https://beta.chinnbot.tv/login/streamlabs',
+        currentURL: window.location.href,
+        params: {},
+      }
+    },
+
+    watch: {
+      gameState () {
+        if (this.gameState.channel !== undefined && this.gameState.channel.includes('#')) {
+          this.channel = this.gameState.channel.split('#')[1]
+        }
+        else {
+          this.channel = this.gameState.channel
+        }
+
+      }
+    },
+
+    methods: {
+      normalWin (team) {
+        this.socket.emit('kill-player', team)
+      },
+
+      suddenDeathWin (team) {
+        this.socket.emit('sudden-death-winner', team)
+      },
+
+      startGame () {
+        this.socket.emit('start-game')
+      },
+
+      generateGame () {
+        this.socket.emit('generate-game')
+      },
+
+      setSuddenDeathPlayers (gameState) {
+        switch (gameState.winners[0].pos) {
+          case 0:
+            this.suddenDeathPlayer1 = true
+            break
+          case 1:
+            this.suddenDeathPlayer2 = true
+            break
+          case 2:
+            this.suddenDeathPlayer3 = true
+            break
+          case 3:
+            this.suddenDeathPlayer4 = true
+            break
+        }
+        switch (gameState.winners[1].pos) {
+          case 0:
+            this.suddenDeathPlayer1 = true
+            break
+          case 1:
+            this.suddenDeathPlayer2 = true
+            break
+          case 2:
+            this.suddenDeathPlayer3 = true
+            break
+          case 3:
+            this.suddenDeathPlayer4 = true
+            break
+        }
+      },
+
+      unsetSuddenDeathButtons () {
+        this.suddenDeathPlayer1 = false
+        this.suddenDeathPlayer2 = false
+        this.suddenDeathPlayer3 = false
+        this.suddenDeathPlayer4 = false
+      },
+
+      splitParams: function () {
+        if (!document.location.href.includes('#')) {
+          return false
+        }
+        let tmpParams = document.location.href.split('#')[1].split('&')
+        tmpParams.forEach(param => {
+          let splitParam = param.split('=')
+          this.params[splitParam[0]] = splitParam[1]
+        })
+        return true
+      },
+
+      connect () {
+        if (!this.socketInit) {
+          this.socket = io.connect('ws://localhost:3000', {
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: Infinity
+          })
+          this.socketInit = true
+
+          //Attach event handlers
+          this.socket.on('connect', () => {
+            this.socket.emit('admin-connected', {})
+          })
+
+          this.socket.on('reconnect', (attemptNumber) => {
+            this.socket.emit('admin-connected', {})
+          })
+
+          this.socket.on('disconnect', () => {
+            this.socket.disconnect()
+            setTimeout(() => {
+              this.connect()
+            }, 5000)
+          })
+        }
+        else {
+          this.socket.io.reconnect()
+        }
+      },
+    },
+
+    mounted () {
+
+      this.connect()
+
+      // let foundParams = this.splitParams()
+      // if (foundParams) {
+      //   this.socket.emit('streamlabs-connected', {})
+      // }
+
+      this.socket.on('admin-connected', data => {
+        this.gameState = data
+      })
+
+      this.socket.on('gameStateUpdate', (gameState) => {
+        this.gameState = gameState
+
+        if (this.gameState.suddenDeath === 1) {
+          this.setSuddenDeathPlayers(gameState)
+        }
+        else {
+          this.unsetSuddenDeathButtons()
+        }
+
+      })
+
+    }
+
+  })
+</script>
+
