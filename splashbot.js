@@ -516,6 +516,9 @@ function checkPlayerAliases (message, username) {
     let aliases = gameState.players[i].character.aliases
     let characterName = gameState.players[i].character.name.toLowerCase()
 
+    if(message.charAt(0) === '!'){
+      message = message.substr(1)
+    }
     if (message.toLowerCase() === ('!' + characterName) || aliases.includes(message)) {
 
       let teamIndex = findTeam(username)
